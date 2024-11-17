@@ -1,19 +1,30 @@
 import { app, Component } from 'apprun';
+import { Project, createProject, loadProject, saveProject } from './_data/projects';
+import { promptService } from './_data/prompts';
 
-const TABS = ['User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan', '+'];
+const beautifyLabel = (filename: string) => {
+  return filename
+    .replace('.md', '')
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 export default class Home extends Component {
   state = {
     dragging: false,
-    leftWidth: 50,
-    start: { x: 0, width: 50 },
+    leftWidth: 30,
+    start: { x: 0, width: 30 },
     el: null as HTMLElement,
     container: null as HTMLElement,
     leftContent: '',
     rightContent: '',
     leftTitle: 'Ideas',
-    rightTitle: TABS[0],
-    activeTabIndex: 0
+    rightTitle: '',
+    activeTab: '',
+    tabs: [] as string[],
+    generating: false,
+    project: null as Project,
   }
 
   view = (state) => (
@@ -22,13 +33,13 @@ export default class Home extends Component {
       <header class="bg-white dark:bg-gray-800 shadow-sm text-xs">
         <div class="flex items-center justify-between px-6 py-4">
           <div class="flex-1 flex items-center gap-4">
-            {TABS.map((tab, index) => (
-              <a $onclick={['setTab', index]}
-                class={`px-4 py-2 rounded-lg transition-colors ${state.activeTabIndex === index
+            {state.tabs.map((tab) => (
+              <a $onclick={['setTab', tab]}
+                class={`px-4 py-2 rounded-lg transition-colors ${state.activeTab === tab
                   ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                   : 'bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}>
-                {tab}
+                  }`}>
+                {beautifyLabel(tab)}
               </a>
             ))}
           </div>
@@ -36,7 +47,7 @@ export default class Home extends Component {
       </header>
 
       {/* Main Content */}
-      <div class="flex h-[calc(100vh-100px)] gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
+      <div class="flex h-[calc(100vh-30px)] gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
         <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
           width: `${state.leftWidth}%`
         }}>
@@ -53,12 +64,20 @@ export default class Home extends Component {
           $onpointermove='move'
           $onpointerup='drop'
           $onpointercancel='drop'
-          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize -mx-0.5 relative z-10 touch-none h-[calc(100%-2rem)] mt-12 ${
-            state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
-          }`}
+          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize -mx-0.5 relative z-10 touch-none h-[calc(100%-2rem)] mt-12 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
+            }`}
         ></div>
         <div class="flex-1 min-w-[200px] overflow-hidden">
-          <h1>{ state.rightTitle }</h1>
+          <div class="flex justify-between items-center">
+            <h1>{state.rightTitle}</h1>
+            <button 
+              $onclick="generate"
+              disabled={state.generating}
+              class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {state.generating ? 'Generating...' : 'Generate'}
+            </button>
+          </div>
           <textarea
             class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
             value={state.rightContent}
@@ -70,7 +89,7 @@ export default class Home extends Component {
   );
 
   update = {
-    
+
     drag: (state, e: PointerEvent) => {
       const target = e.target as HTMLElement;
       target.setPointerCapture(e.pointerId);
@@ -112,23 +131,100 @@ export default class Home extends Component {
       };
     },
 
-    updateLeft: (state, e: Event) => ({
-      ...state,
-      leftContent: (e.target as HTMLTextAreaElement).value
-    }),
-
-    updateRight: (state, e: Event) => ({
-      ...state,
-      rightContent: (e.target as HTMLTextAreaElement).value
-    }),
-
-    'setTab': (state, index: number) => {
+    updateLeft: (state, e: Event) => {
+      const newContent = (e.target as HTMLTextAreaElement).value;
+      if (state.project) {
+        state.project.files['project.md'] = newContent;
+        saveProject(state.project);
+      }
       return {
         ...state,
-        activeTabIndex: index,
-        rightTitle: TABS[index],
+        leftContent: newContent
       };
     },
+
+    updateRight: (state, e: Event) => {
+      const newContent = (e.target as HTMLTextAreaElement).value;
+      if (state.project) {
+        state.project.files[state.activeTab] = newContent;
+        saveProject(state.project);
+      }
+      return {
+        ...state,
+        rightContent: newContent
+      };
+    },
+
+    'setTab': (state, filename: string) => {
+      return {
+        ...state,
+        activeTab: filename,
+        rightTitle: beautifyLabel(filename),
+        rightContent: state.project?.files[filename] || ''
+      };
+    },
+
+    'generate': async (state) => {
+      if (state.generating || !state.activeTab) return;
+
+      state = { ...state, generating: true };
+
+      try {
+        // Load prompts
+        const prompts = await promptService.loadPrompts();
+        
+        // Match prompt by name (remove .md and convert to title case)
+        const promptName = beautifyLabel(state.activeTab);
+        const prompt = prompts.find(p => p.name === promptName);
+        
+        if (!prompt) {
+          console.error('No matching prompt found for:', promptName);
+          return { ...state, generating: false };
+        }
+
+        // TODO: Replace this with actual API call to AI service
+        const projectIdeas = state.project.files['project.md'];
+        const generatedContent = `${prompt.text}\n\nBased on project ideas below:\n\n<ideas>\n${projectIdeas}<ideas>\n\n`;
+        
+        if (state.project) {
+          state.project.files[state.activeTab] = generatedContent;
+          saveProject(state.project);
+        }
+
+        return {
+          ...state,
+          generating: false,
+          rightContent: generatedContent
+        };
+
+      } catch (error) {
+        console.error('Generation failed:', error);
+        return { ...state, generating: false };
+      }
+    },
+  };
+
+  mounted = () => {
+    let project = loadProject();
+
+    if (!project) {
+      project = createProject('New Project');
+      saveProject(project);
+    }
+
+    const tabs = Object.keys(project.files)
+      .filter(name => name !== 'project.md')
+
+    return {
+      ...this.state,
+      project,
+      tabs,
+      leftContent: project.files['project.md'] || '',
+      rightContent: project.files[tabs[0]] || '',
+      leftTitle: 'Project Ideas',
+      rightTitle: beautifyLabel(tabs[0]),
+      activeTab: tabs[0]
+    };
   };
 
   unload = ({ el }) => {
