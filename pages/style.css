@@ -11,5 +11,5 @@ body {
 }
 
 h1 {
-  @apply text-xl font-medium text-gray-800 font-[-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open_Sans','Helvetica_Neue',sans-serif] mb-4;
+  @apply text-xl font-medium text-gray-800 dark:text-gray-100 font-[-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open_Sans','Helvetica_Neue',sans-serif] mb-4;
 }
