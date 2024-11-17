@@ -7,9 +7,9 @@ const menuItems = [
     icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   },
   {
-    path: '/lib',
-    label: 'Statistics',
-    icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    path: '/prompts',
+    label: 'Prompts',
+    icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
   },
   {
     path: '/settings',
@@ -54,9 +54,13 @@ export default class Layout extends Component {
         {/* Sidebar */}
         <div id="sidebar" class={`fixed inset-y-0 left-0 ${state.sidebarOpen ? 'w-64' : 'w-14'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-200 ease-in-out z-10 flex flex-col`}>
           {/* App Logo */}
-          <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class={`text-xs font-medium text-gray-900 dark:text-white ${state.sidebarOpen ? '' : 'hidden'}`}>X1</div>
-            <div class={`text-xs font-medium text-gray-900 dark:text-white ${state.sidebarOpen ? 'hidden' : ''}`}>X1</div>
+          <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-700 h-14 relative overflow-hidden">
+            <div class={`absolute inset-0 p-4 flex items-center transition-all duration-200 ${state.sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+              <span class="text-gray-900 dark:text-white whitespace-nowrap">BA Assistant</span>
+            </div>
+            <div class={`absolute inset-0 p-4 flex items-center transition-all duration-200 ${state.sidebarOpen ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
+              <span class="text-gray-900 dark:text-white">BB</span>
+            </div>
           </div>
 
           {/* Navigation Links */}
