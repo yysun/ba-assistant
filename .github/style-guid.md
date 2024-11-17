@@ -119,20 +119,20 @@ bg-white px-6 py-4 border-t border-gray-200
 ### Example Usage
 
 ```jsx
-<div className="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-  <div className="w-full">
-    <table className="w-full divide-y divide-gray-200">
+<div class="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div class="w-full">
+    <table class="w-full divide-y divide-gray-200">
       <thead>
-        <tr className="bg-gray-50">
-          <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <tr class="bg-gray-50">
+          <th class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Column Header
           </th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-gray-200">
-        <tr className="hover:bg-gray-50 cursor-pointer">
-          <td className="px-6 py-2.5 whitespace-nowrap">
-            <span className="text-sm text-gray-600">Cell Content</span>
+      <tbody class="divide-y divide-gray-200">
+        <tr class="hover:bg-gray-50 cursor-pointer">
+          <td class="px-6 py-2.5 whitespace-nowrap">
+            <span class="text-sm text-gray-600">Cell Content</span>
           </td>
         </tr>
       </tbody>
@@ -218,12 +218,12 @@ divide-y divide-gray-200 dark:divide-gray-700
 ### Form Field
 
 ```jsx
-<label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2">
+<label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2">
   Field Label
 </label>
 <input
   type="text"
-  className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs font-medium"
+  class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs font-medium"
   placeholder="Enter value"
 />
 ```
@@ -231,10 +231,10 @@ divide-y divide-gray-200 dark:divide-gray-700
 ### Button Group
 
 ```jsx
-<button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700">
+<button class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700">
   Save Changes
 </button>
-<button className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+<button class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
   Cancel
 </button>
 ```
@@ -242,11 +242,11 @@ divide-y divide-gray-200 dark:divide-gray-700
 ### Tag List
 
 ```jsx
-<div className="flex flex-wrap gap-2">
-  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+<div class="flex flex-wrap gap-2">
+  <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
     Tag 1
   </span>
-  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+  <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
     Tag 2
   </span>
 </div>

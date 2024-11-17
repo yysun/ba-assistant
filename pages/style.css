@@ -9,3 +9,7 @@ body {
 .nav-link {
   @apply flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg;
 }
+
+h1 {
+  @apply text-xl font-medium text-gray-800 font-[-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open_Sans','Helvetica_Neue',sans-serif] mb-4;
+}

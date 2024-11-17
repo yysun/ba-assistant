@@ -75,3 +75,7 @@ export default class extends Component {
 ## Rendering
 
 The event handler in the `update` map returns the new state. AppRun will re-render the component with the new state. If it returns null or undefined, it tells AppRun not to render the component.
+
+## Styles
+
+AppRun uses `class` attribute instead of `className`.
