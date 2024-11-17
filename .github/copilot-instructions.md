@@ -51,31 +51,18 @@ export default () => <>
 
 ## Navigation
 
-Use the `a` tag to navigate between pages. E.g., `<a href="/docs">Docs</a>`
+- Use the `a` tag to navigate between pages. E.g., `<a href="/docs">Docs</a>`
 
 ## Events
+- If you want to listen to an event, use the $ sign, such as `$onclick`, `$onsubmit`, `$onchange`, etc. AppRun will automatically bind the event to the event handler in the `update` map. E.g., `$onclick="+"`, `$onclick="-"` will bind the `+` and `-` events to the `+` and `-` event handlers in the `update` map.
+- You can also pass parameters to the event handler in an arry. E.g., `$onclick={['add', 1]}` will pass `1` as a parameter to the `add` event handler.
+- The AppRun event name starts with '#' or '@' are global events. E.g., `#logout`, `@login`. Otherwise, the events are local events scoped to the component. E.g., `add`, `+` events are local events.
+- Use local events for component-specific events. Use global events for app-wide events.
 
-Use the $ (dollar) sign to listen to events and define event handlers in `update`. E.g., 
+## Rendering Controls
 
-```tsx
-import { app, Component } from 'apprun';
-export default class extends Component {
-  state = 0;
-  view = () => <>
-    <p>{this.state}</p>
-    <button $onclick={['#add', 1]}>+</button>
-    <button $onclick={['#add', -1]}>-</button>
-  </>;
-  update = {
-    '#add': (state, d) => state + d
-  }
-}
-```
-
-## Rendering
-
-The event handler in the `update` map returns the new state. AppRun will re-render the component with the new state. If it returns null or undefined, it tells AppRun not to render the component.
+- The event handler in the `update` map returns the new state. AppRun will re-render the component with the new state. If it returns null or undefined, it tells AppRun not to render the component.
 
 ## Styles
 
-AppRun uses `class` attribute instead of `className`.
+- Uses `class` attribute instead of `className`.
