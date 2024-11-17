@@ -1,6 +1,9 @@
 import { app, Component } from 'apprun';
 
-export default class extends Component {
+
+const TABS = ['User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan'];
+
+export default class Home extends Component {
   state = {
     dragging: false,
     leftWidth: 50,
@@ -8,35 +11,50 @@ export default class extends Component {
     el: null as HTMLElement,
     container: null as HTMLElement,
     leftContent: '',
-    rightContent: ''
+    rightContent: '',
+    activeTab: 'User Story Map'
   }
 
   view = (state) => (
     <>
-      <h1>Design Your System</h1>
-      <div class="flex h-[calc(100vh-100px)] gap-0 select-none overflow-hidden" ref={el => state.container = el}>
-        <div class={`flex-none bg-gray-100 min-w-[200px] overflow-auto`} style={{ 
+      <div class="flex justify-between items-center mb-4">
+        <h1>Design Your System</h1>
+        <div class="flex gap-4">
+          {TABS.map(tab => (
+            <button
+              class={`px-4 py-2 rounded-lg transition-colors ${state.activeTab === tab
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              onclick={() => this.run('setTab', tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div class="flex h-[calc(100vh-160px)] gap-0 select-none overflow-hidden" ref={el => state.container = el}>
+        <div class={`flex-none bg-gray-100 dark:bg-gray-800 min-w-[200px] overflow-auto`} style={{
           width: `${state.leftWidth}%`
         }}>
-          <textarea 
-            class="w-full h-full resize-none p-2 bg-transparent outline-none"
+          <textarea
+            class="w-full h-full resize-none p-2 bg-transparent outline-none dark:text-gray-100"
             value={state.leftContent}
             $oninput={['#updateLeft']}
           ></textarea>
         </div>
-        <div 
+        <div
           ref={el => state.el = el}
           $onpointerdown='drag'
           $onpointermove='move'
           $onpointerup='drop'
           $onpointercancel='drop'
-          class={`w-2 bg-gray-300 hover:bg-gray-400 cursor-col-resize -mx-0.5 relative z-10 touch-none ${
-            state.dragging ? 'bg-gray-400' : ''
-          }`}
+          class={`w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-col-resize -mx-0.5 relative z-10 touch-none ${state.dragging ? 'bg-gray-400 dark:bg-gray-500' : ''
+            }`}
         ></div>
-        <div class="flex-1 bg-gray-100 min-w-[200px] overflow-auto">
-          <textarea 
-            class="w-full h-full resize-none p-2 bg-transparent outline-none"
+        <div class="flex-1 bg-gray-100 dark:bg-gray-800 min-w-[200px] overflow-auto">
+          <textarea
+            class="w-full h-full resize-none p-2 bg-transparent outline-none dark:text-gray-100"
             value={state.rightContent}
             $oninput={['#updateRight']}
           ></textarea>
@@ -63,11 +81,11 @@ export default class extends Component {
 
     move: (state, e: PointerEvent) => {
       if (!state.dragging || !state.container) return;
-      
+
       const dx = e.pageX - state.start.x;
       const containerWidth = state.container.offsetWidth;
       const deltaPercentage = (dx / containerWidth) * 100;
-      const newLeftWidth = Math.max(20, Math.min(80, 
+      const newLeftWidth = Math.max(20, Math.min(80,
         state.start.width + deltaPercentage
       ));
 
@@ -76,7 +94,7 @@ export default class extends Component {
 
     drop: (state, e: PointerEvent) => {
       if (!state.dragging) return;
-      
+
       const target = e.target as HTMLElement;
       target.releasePointerCapture(e.pointerId);
       document.body.style.cursor = '';
@@ -95,6 +113,11 @@ export default class extends Component {
     '#updateRight': (state, e: Event) => ({
       ...state,
       rightContent: (e.target as HTMLTextAreaElement).value
+    }),
+
+    setTab: (state, tab: string) => ({
+      ...state,
+      activeTab: tab
     })
   };
 
