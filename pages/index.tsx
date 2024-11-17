@@ -6,7 +6,9 @@ export default class extends Component {
     leftWidth: 50,
     start: { x: 0, width: 50 },
     el: null as HTMLElement,
-    container: null as HTMLElement
+    container: null as HTMLElement,
+    leftContent: '',
+    rightContent: ''
   }
 
   view = (state) => (
@@ -15,7 +17,13 @@ export default class extends Component {
       <div class="flex h-[calc(100vh-100px)] gap-0 select-none overflow-hidden" ref={el => state.container = el}>
         <div class={`flex-none bg-gray-100 min-w-[200px] overflow-auto`} style={{ 
           width: `${state.leftWidth}%`
-        }}></div>
+        }}>
+          <textarea 
+            class="w-full h-full resize-none p-2 bg-transparent outline-none"
+            value={state.leftContent}
+            $oninput={['#updateLeft']}
+          ></textarea>
+        </div>
         <div 
           ref={el => state.el = el}
           $onpointerdown='drag'
@@ -26,7 +34,13 @@ export default class extends Component {
             state.dragging ? 'bg-gray-400' : ''
           }`}
         ></div>
-        <div class="flex-1 bg-gray-100 min-w-[200px] overflow-auto"></div>
+        <div class="flex-1 bg-gray-100 min-w-[200px] overflow-auto">
+          <textarea 
+            class="w-full h-full resize-none p-2 bg-transparent outline-none"
+            value={state.rightContent}
+            $oninput={['#updateRight']}
+          ></textarea>
+        </div>
       </div>
     </>
   );
@@ -71,7 +85,17 @@ export default class extends Component {
         ...state,
         dragging: false
       };
-    }
+    },
+
+    '#updateLeft': (state, e: Event) => ({
+      ...state,
+      leftContent: (e.target as HTMLTextAreaElement).value
+    }),
+
+    '#updateRight': (state, e: Event) => ({
+      ...state,
+      rightContent: (e.target as HTMLTextAreaElement).value
+    })
   };
 
   unload = ({ el }) => {
