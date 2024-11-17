@@ -1,8 +1,5 @@
 import { app, Component } from 'apprun';
 
-
-const TABS = ['User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan'];
-
 export default class Home extends Component {
   state = {
     dragging: false,
@@ -11,27 +8,13 @@ export default class Home extends Component {
     el: null as HTMLElement,
     container: null as HTMLElement,
     leftContent: '',
-    rightContent: '',
-    activeTab: 'User Story Map'
+    rightContent: ''
   }
 
   view = (state) => (
     <>
       <div class="flex justify-between items-center mb-4">
         <h1>Design Your System</h1>
-        <div class="flex gap-4">
-          {TABS.map(tab => (
-            <button
-              class={`px-4 py-2 rounded-lg transition-colors ${state.activeTab === tab
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-              onclick={() => this.run('setTab', tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
       </div>
       <div class="flex h-[calc(100vh-160px)] gap-0 select-none overflow-hidden" ref={el => state.container = el}>
         <div class={`flex-none bg-gray-100 dark:bg-gray-800 min-w-[200px] overflow-auto`} style={{
@@ -113,11 +96,6 @@ export default class Home extends Component {
     '#updateRight': (state, e: Event) => ({
       ...state,
       rightContent: (e.target as HTMLTextAreaElement).value
-    }),
-
-    setTab: (state, tab: string) => ({
-      ...state,
-      activeTab: tab
     })
   };
 
