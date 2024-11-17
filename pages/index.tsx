@@ -1,5 +1,7 @@
 import { app, Component } from 'apprun';
 
+const TABS = ['User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan', '+'];
+
 export default class Home extends Component {
   state = {
     dragging: false,
@@ -10,44 +12,64 @@ export default class Home extends Component {
     leftContent: '',
     rightContent: '',
     leftTitle: 'Ideas',
-    rightTitle: '',
+    rightTitle: TABS[0],
+    activeTabIndex: 0
   }
 
   view = (state) => (
-    <div class="flex h-[calc(100vh-100px)] gap-0 select-none overflow-hidden" ref={el => state.container = el}>
-      <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
-        width: `${state.leftWidth}%`
-      }}>
-        <h1>{state.leftTitle}</h1>
-        <textarea
-          class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
-          value={state.leftContent}
-          $oninput={['updateLeft']}
-        ></textarea>
+    <>
+      {/* Header */}
+      <header class="bg-white dark:bg-gray-800 shadow-sm text-xs">
+        <div class="flex items-center justify-between px-6 py-4">
+          <div class="flex-1 flex items-center gap-4">
+            {TABS.map((tab, index) => (
+              <a $onclick={['setTab', index]}
+                class={`px-4 py-2 rounded-lg transition-colors ${state.activeTabIndex === index
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}>
+                {tab}
+              </a>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div class="flex h-[calc(100vh-100px)] gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
+        <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
+          width: `${state.leftWidth}%`
+        }}>
+          <h1>{state.leftTitle}</h1>
+          <textarea
+            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
+            value={state.leftContent}
+            $oninput={['updateLeft']}
+          ></textarea>
+        </div>
+        <div
+          ref={el => state.el = el}
+          $onpointerdown='drag'
+          $onpointermove='move'
+          $onpointerup='drop'
+          $onpointercancel='drop'
+          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize -mx-0.5 relative z-10 touch-none h-[calc(100%-2rem)] mt-12 ${
+            state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
+          }`}
+        ></div>
+        <div class="flex-1 min-w-[200px] overflow-hidden">
+          <h1>{ state.rightTitle }</h1>
+          <textarea
+            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
+            value={state.rightContent}
+            $oninput={['updateRight']}
+          ></textarea>
+        </div>
       </div>
-      <div
-        ref={el => state.el = el}
-        $onpointerdown='drag'
-        $onpointermove='move'
-        $onpointerup='drop'
-        $onpointercancel='drop'
-        class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize -mx-0.5 relative z-10 touch-none h-[calc(100%-2rem)] mt-12 ${
-          state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
-        }`}
-      ></div>
-      <div class="flex-1 min-w-[200px] overflow-hidden">
-        <h1>{ state.rightTitle }</h1>
-        <textarea
-          class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
-          value={state.rightContent}
-          $oninput={['updateRight']}
-        ></textarea>
-      </div>
-    </div>
+    </>
   );
 
   update = {
-    '#': (state, title) => ({ ...state, rightTitle: title }),
     
     drag: (state, e: PointerEvent) => {
       const target = e.target as HTMLElement;
@@ -98,7 +120,15 @@ export default class Home extends Component {
     updateRight: (state, e: Event) => ({
       ...state,
       rightContent: (e.target as HTMLTextAreaElement).value
-    })
+    }),
+
+    'setTab': (state, index: number) => {
+      return {
+        ...state,
+        activeTabIndex: index,
+        rightTitle: TABS[index],
+      };
+    },
   };
 
   unload = ({ el }) => {
