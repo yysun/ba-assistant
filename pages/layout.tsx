@@ -1,5 +1,4 @@
 import { app, Component } from 'apprun';
-import Header from './header';
 
 const menuItems = [
   {
@@ -12,16 +11,6 @@ const menuItems = [
     label: 'Statistics',
     icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
   },
-  // { 
-  //   path: '/contact', 
-  //   label: 'Products',
-  //   icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-  // },
-  // { 
-  //   path: '/users', 
-  //   label: 'Users',
-  //   icon: <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-  // },
   {
     path: '/settings',
     label: 'Settings',
@@ -29,18 +18,29 @@ const menuItems = [
   }
 ];
 
+const getSystemDarkMode = () => 
+  window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 export default class Layout extends Component {
   state = {
-    sidebarOpen: false,  
+    sidebarOpen: false,
+    darkMode: getSystemDarkMode(),
   };
 
   update = {
     '//': state => ({ ...state, children: [] }),
-    '#toggle-sidebar': state => {
+    'toggle-sidebar': state => {
       const main = document.getElementById('main-app') as HTMLElement;
       const children = Array.from(main?.children || []);
       return { ...state, sidebarOpen: !state.sidebarOpen, children };
+    },
+
+    'toggle-dark-mode': state => {
+      document.documentElement.classList.remove('dark');
+      state.darkMode = !state.darkMode;
+      if (state.darkMode) {
+        document.documentElement.classList.add('dark');
+      }
     },
   };
 
@@ -64,10 +64,11 @@ export default class Layout extends Component {
             {menuItems.map(item => (
               <a
                 href={item.path}
-                class={`relative flex items-center mx-2 p-2 text-xs rounded-lg ${isActive(item.path)
-                  ? 'text-white dark:text-blue-400 bg-black dark:bg-blue-900/50'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
+                class={`relative flex items-center mx-2 p-2 text-xs rounded-lg ${
+                  isActive(item.path)
+                    ? 'text-white dark:text-blue-400 bg-black dark:bg-blue-900/50'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
               >
                 <div class="w-6 h-6 flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,9 +80,28 @@ export default class Layout extends Component {
             ))}
           </nav>
 
+          {/* Dark Mode Toggle */}
+          <div class="py-2">
+            <a
+              $onclick="toggle-dark-mode"
+              class="relative flex items-center mx-2 p-2 text-xs rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <div class="w-6 h-6 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {state.darkMode ? (
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  ) : (
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  )}
+                </svg>
+              </div>
+              <span class={`menu-label ml-3 ${state.sidebarOpen ? '' : 'hidden'}`}>Toggle Theme</span>
+            </a>
+          </div>
+
           {/* Toggle Button */}
           <button
-            $onclick="#toggle-sidebar"
+            $onclick="toggle-sidebar"
             class="flex items-center text-left text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 p-4 border-t border-gray-200 dark:border-gray-700"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,8 +116,7 @@ export default class Layout extends Component {
 
         {/* Main Content */}
         <div id="main-content" class={`${state.sidebarOpen ? 'ml-64' : 'ml-16'} flex-1 min-h-screen transition-all duration-200 bg-gray-50 dark:bg-gray-900`}>
-          <Header />
-          <main class="p-6 text-gray-600 dark:text-gray-300 text-xs" id="main-app">
+          <main id="main-app">
             {state.children}
           </main>
         </div>
