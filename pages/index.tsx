@@ -8,7 +8,9 @@ export default class Home extends Component {
     el: null as HTMLElement,
     container: null as HTMLElement,
     leftContent: '',
-    rightContent: ''
+    rightContent: '',
+    leftTitle: 'Ideas',
+    rightTitle: '',
   }
 
   view = (state) => (
@@ -16,7 +18,7 @@ export default class Home extends Component {
       <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
         width: `${state.leftWidth}%`
       }}>
-        <h1>Ideas</h1>
+        <h1>{state.leftTitle}</h1>
         <textarea
           class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
           value={state.leftContent}
@@ -34,7 +36,7 @@ export default class Home extends Component {
         }`}
       ></div>
       <div class="flex-1 min-w-[200px] overflow-hidden">
-        <h1>Results</h1>
+        <h1>{ state.rightTitle }</h1>
         <textarea
           class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
           value={state.rightContent}
@@ -45,6 +47,8 @@ export default class Home extends Component {
   );
 
   update = {
+    '#': (state, title) => ({ ...state, rightTitle: title }),
+    
     drag: (state, e: PointerEvent) => {
       const target = e.target as HTMLElement;
       target.setPointerCapture(e.pointerId);
@@ -86,12 +90,12 @@ export default class Home extends Component {
       };
     },
 
-    'updateLeft': (state, e: Event) => ({
+    updateLeft: (state, e: Event) => ({
       ...state,
       leftContent: (e.target as HTMLTextAreaElement).value
     }),
 
-    'updateRight': (state, e: Event) => ({
+    updateRight: (state, e: Event) => ({
       ...state,
       rightContent: (e.target as HTMLTextAreaElement).value
     })

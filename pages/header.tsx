@@ -14,21 +14,19 @@ export default class Header extends Component {
         <div class="flex items-center justify-between px-6 py-4">
           <div class="flex-1 flex items-center gap-4">
             {TABS.map((tab, index) => (
-              <button
+              <a href={`#${tab}`} $onclick={['setTab', index]}
                 class={`px-4 py-2 rounded-lg transition-colors ${activeTabIndex === index
                   ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                   : 'bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-                $onclick={['setTab', index]}
-              >
+                }`}>
                 {tab}
-              </button>
+              </a>
             ))}
           </div>
 
           <div class="flex items-center space-x-4">
             <button
-              $onclick="#toggle-dark-mode"
+              $onclick="toggle-dark-mode"
               class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               {darkMode ? (
@@ -48,16 +46,19 @@ export default class Header extends Component {
   };
 
   update = {
-    '#toggle-dark-mode': state => {
+    'toggle-dark-mode': state => {
       document.documentElement.classList.remove('dark');
       state.darkMode = !state.darkMode;
       if (state.darkMode) {
         document.documentElement.classList.add('dark');
       }
     },
-    'setTab': (state, index: number) => ({
-      ...state,
-      activeTabIndex: index
-    })
+    'setTab': (state, index: number) => {
+      app.run('#', TABS[index]);
+      return {
+        ...state,
+        activeTabIndex: index
+      };
+    },
   };
 }
