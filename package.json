@@ -1,8 +1,8 @@
 {
-  "name": "apprun-site-template",
+  "name": "ba-assistant",
   "version": "1.0.0",
-  "description": "This site is built with [AppRun-Site](https://github.com/yysun/apprun-site).",
-  "main": "postcss.config.js",
+  "description": "BA Assistant is a tool helps business analysts building requirement documents using AI LLM.",
+  "main": "server.js",
   "scripts": {
     "test": "jest",
     "start": "node server.js",

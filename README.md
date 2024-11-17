@@ -1,6 +1,6 @@
-## BA Buddy
+## BA Assistant
 
-BA Buddy is a web application that helps business analysis tools building requirements using AI LLM.
+BA Assistant is a tool helps business analysts building requirement documents using AI LLM.
 
 **Feature Summary:**
 
@@ -43,6 +43,7 @@ BA Buddy is a web application that helps business analysis tools building requir
   - [ ] save prompts documents to local storage
   - [ ] delete a prompt
   - [ ] each prompt should have a name, and the prompt text
+  - [ ] make default prompt list of 'User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan' if no prompts are loaded
 
 
 ## Project Management
