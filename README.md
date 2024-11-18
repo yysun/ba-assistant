@@ -5,32 +5,27 @@ BA Assistant is a tool helps business analysts building requirement documents us
 **Feature Summary:**
 
 - **Project Management**
-  - Create and manage multiple projects.
-
-  - A project is a folder that contains documents that are generated using AI language models based on project ideas, including:
+  - Create and manage one project stored in the local storage.
+  - A project is a folder that contains documents including:
     - Project Ideas
     - User Story Map
     - Customer Journey Map
     - Pages and Navigations
     - Pages and User Stories
     - Sprint Planning
+  - Combine the project ideas with the prompts for LLM
+  - Call LLM API to generate the document content
+  - Export the project to a folder
+  - Open a project from a folder
+  - If a project is opened from a folder, always save to that folder
 
 - **Promot Mangement**
 
-  - Create and manage prompts for generating project documents.
-
-
-- **Document Editing and Storage**
-  - Edit generated documents within the app.
-  - Save documents to the local file system for offline access.
-
-- **Prompt Management**
-  - Create and manage custom prompts for generating project documents.
+  - Create and manage prompts 
+  - User can create custom prompts
 
 - **Configuration**
   - Select and configure different AI language models to use for document generation.
-
-
 
 
 ## Prompt Management
