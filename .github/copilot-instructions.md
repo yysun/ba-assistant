@@ -55,6 +55,17 @@ export default class extends Component {
 - Use local events for component-specific events. Use global events for app-wide events.
 - Try use the local events as much as possible. Only use global events when necessary.
 
+## Document Level Events
+
+- Add document level event handler in the `main.ts` file to centralized the event handling. E.g.,
+
+```tsx
+document.addEventListener('click', (e) => {
+  app.run('@document-click', e);
+});
+```
+
+
 ## Rendering Controls
 
 - The event handler in the `update` map returns the new state. AppRun will re-render the component with the new state. If it returns null or undefined, it tells AppRun not to render the component.

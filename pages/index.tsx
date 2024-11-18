@@ -119,7 +119,7 @@ export default class Home extends Component {
                   </svg>
                 </button>
                 {state.showFileSelector && (
-                  <div class="absolute z-20 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                  <div id="file-selector" class="absolute z-20 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                     <label class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                       <input
                         type="checkbox"
@@ -278,7 +278,7 @@ export default class Home extends Component {
       return {
         ...state,
         selectedFiles: newSelectedFiles,
-        showFileSelector: false,
+        // showFileSelector: false,
         promptContent: '' // Reset prompt content to trigger regeneration
       };
     },
@@ -298,6 +298,19 @@ export default class Home extends Component {
 
     generate: async (state) => { },
 
+    '@document-click': (state, e: MouseEvent) => {
+      if (!state.showFileSelector) return;
+      
+      const target = e.target as HTMLElement;
+      const isInsideSelector = target.closest('#file-selector, button[class*="bg-gray-500"]');
+      
+      if (!isInsideSelector) {
+        return {
+          ...state,
+          showFileSelector: false
+        };
+      }
+    }
   };
 
   unload = ({ el }) => {

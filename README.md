@@ -61,6 +61,7 @@ BA Assistant is a tool helps business analysts building requirement documents us
   - [x] each markdown file is generated using the prompts
   - [x] user can create new markdown files and create new prompt for it
 
+
 ## Home Page
 
 - [x] load the project from local storage
@@ -72,7 +73,8 @@ BA Assistant is a tool helps business analysts building requirement documents us
 - [x] auto save the document when user switch to another tab
 - [x] match file with the prompts
 - [x] generate the document content using the matching prompt
-- [X] add a copy icon button to copy the text area content to the clipboard
-- [ ] create a select button to the left of the 'generate' button
-  - [ ] it should show the list of files to allow selecting multiple files 
-  - [ ] the selected file content will be used to generate prompt
+- [x] add a copy icon button to copy the text area content to the clipboard
+- [x] create a select button to the left of the 'generate' button
+  - [x] it should show the list of files to allow selecting multiple files 
+  - [x] the selected file content will be used to generate prompt
+- [ ] call the LLM API to generate the document content
