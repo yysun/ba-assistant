@@ -10,9 +10,9 @@ const DEFAULT_FILES = [
   'project.md',
   'user-story-map.md',
   'customer-journey-map.md',
-  'pages-and-navigations.md',
-  'pages-and-user-stories.md',
-  'sprint-planning.md'
+  'page-navigations.md',
+  'page-user-stories.md',
+  'sprint-plan.md'
 ];
 
 export const createProject = (name: string): Project => ({

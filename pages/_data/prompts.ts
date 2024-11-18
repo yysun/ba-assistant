@@ -20,12 +20,12 @@ export class PromptService {
     },
     {
       id: crypto.randomUUID(),
-      name: 'Pages and Navs',
+      name: 'Page Navigations',
       text: 'Help me design the page structure and navigation:\n\nSite Map:\n[Page Hierarchy]\n\nNavigation Flow:\n[User Navigation Paths]\n\nPage Components:\n[Key UI Elements]\n\nInteraction Points:\n[User Interactions]'
     },
     {
       id: crypto.randomUUID(),
-      name: 'Page and Stories',
+      name: 'Page User Stories',
       text: 'Help me define the page requirements and user stories:\n\nPage Purpose:\n[Main Objectives]\n\nUser Stories:\n[As a... I want... So that...]\n\nAcceptance Criteria:\n[Criteria List]\n\nTechnical Notes:\n[Implementation Details]'
     },
     {

@@ -1,5 +1,5 @@
 import { app, Component } from 'apprun';
-import { Project, createProject, loadProject, saveProject } from './_data/projects';
+import { Project, createProject, loadProject, saveProject } from './_data/project';
 import { promptService } from './_data/prompts';
 
 const beautifyLabel = (filename: string) => {
