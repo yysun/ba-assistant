@@ -48,7 +48,6 @@ export default class Home extends Component {
     const generatePrompt = () => {
       const promptName = beautifyLabel(state.activeTab);
       const prompt = state.prompts?.find(p => p.name === promptName);
-      
       if (!prompt) {
         console.error('No matching prompt found:', promptName);
         return '';
@@ -109,7 +108,7 @@ export default class Home extends Component {
             <h1>{state.rightTitle}</h1>
             <div class="flex gap-2">
               <div class="relative">
-                <button 
+                <button
                   $onclick="toggleFileSelector"
                   class="px-3 py-1 mb-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg flex items-center gap-1"
                 >
@@ -132,37 +131,40 @@ export default class Home extends Component {
                     {state.tabs
                       .filter(file => file !== state.activeTab)
                       .map(file => (
-                      <label class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={state.selectedFiles.includes(file)}
-                          $onchange={['toggleFileSelection', file]}
-                          class="mr-2"
-                        />
-                        {beautifyLabel(file)}
-                      </label>
-                    ))}
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={state.selectedFiles.includes(file)}
+                            $onchange={['toggleFileSelection', file]}
+                            class="mr-2"
+                          />
+                          {beautifyLabel(file)}
+                        </label>
+                      ))}
                   </div>
                 )}
               </div>
-              <button 
+              {/* Copy Button */}
+              <div class="relative">
+                <button
+                  $onclick="copyContent"
+                  class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg relative"
+                  title="Copy the prompt"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                  </svg>
+                </button>
+              </div>
+              {/* Generate Button */}
+              <button
                 $onclick="generate"
                 disabled={state.generating}
                 class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {state.generating ? 'Generating...' : 'Generate'}
               </button>
-              <button 
-                $onclick="copyContent"
-                class="px-3 py-1 mb-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
-                title="Copy to clipboard"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                </svg>
-              </button>
-
             </div>
           </div>
           <div class="flex-1 flex flex-col">
@@ -172,6 +174,7 @@ export default class Home extends Component {
                 class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
                 value={state.promptContent || generatePrompt()}
                 placeholder="Generated prompt/response will appear here..."
+                $oninput={['updatePrompt']}
               ></textarea>
             </div>
             {/* Document Area */}
@@ -283,9 +286,27 @@ export default class Home extends Component {
       };
     },
 
-    copyContent: async (state) => {
+    updatePrompt: (state, e: Event) => {
+      const newContent = (e.target as HTMLTextAreaElement).value;
+      return {
+        ...state,
+        promptContent: newContent
+      };
+    },
+
+    copyContent: async (state, e: MouseEvent) => {
       try {
         await navigator.clipboard.writeText(state.promptContent);
+
+        const tooltip = document.createElement('div');
+        tooltip.textContent = 'Copied!';
+        tooltip.className = 'absolute top-8 -left-6 px-2 py-1 text-xs bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 rounded shadow pointer-events-none z-50 whitespace-nowrap';
+
+        const buttonContainer = (e.target as HTMLElement).closest('.relative');
+        if (buttonContainer) {
+          buttonContainer.appendChild(tooltip);
+          setTimeout(() => tooltip.remove(), 2000);
+        }
       } catch (err) {
         console.error('Failed to copy text:', err);
       }
@@ -300,10 +321,10 @@ export default class Home extends Component {
 
     '@document-click': (state, e: MouseEvent) => {
       if (!state.showFileSelector) return;
-      
+
       const target = e.target as HTMLElement;
       const isInsideSelector = target.closest('#file-selector, button[class*="bg-gray-500"]');
-      
+
       if (!isInsideSelector) {
         return {
           ...state,
