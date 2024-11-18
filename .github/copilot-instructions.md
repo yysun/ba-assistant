@@ -18,9 +18,17 @@ export default class extends Component {
 }
 ```
 - Use the `state` property to define the initial state.
-- The initial state can be a value or an async function that returns the initial state.
 - Use the `view` method to define the component view.
 - Use the `update` map to define the event handlers.
+
+## Initial State
+
+- Avoid using the `mounted` method to initialize the state. Use the `state` property instead.
+  - You can assign a value or a function that returns a value.
+  - You also can assign an async function that returns a Promise.
+  - No need to use IIFE when assigning a function to the `state` property.
+  - Examples of initilizing the `state`: `state = 0`, `state = () => 0`, `state = async () => await fetch('/api/data')`
+
 
 ## Event Handlers
 

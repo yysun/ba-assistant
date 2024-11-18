@@ -11,22 +11,34 @@ const beautifyLabel = (filename: string) => {
 };
 
 export default class Home extends Component {
-  state = {
-    dragging: false,
-    leftWidth: 30,
-    start: { x: 0, width: 30 },
-    el: null as HTMLElement,
-    container: null as HTMLElement,
-    leftContent: '',
-    rightContent: '',
-    leftTitle: 'Ideas',
-    rightTitle: '',
-    activeTab: '',
-    tabs: [] as string[],
-    generating: false,
-    project: null as Project,
-    selectedFiles: [] as string[],
-    showFileSelector: false,
+  state = () => {
+    let project = loadProject();
+
+    if (!project) {
+      project = createProject('New Project');
+      saveProject(project);
+    }
+
+    const tabs = Object.keys(project.files)
+      .filter(name => name !== 'project.md')
+
+    return {
+      dragging: false,
+      leftWidth: 30,
+      start: { x: 0, width: 30 },
+      el: null as HTMLElement,
+      container: null as HTMLElement,
+      leftContent: project.files['project.md'] || '',
+      rightContent: project.files[tabs[0]] || '',
+      leftTitle: 'Project Ideas',
+      rightTitle: beautifyLabel(tabs[0]),
+      activeTab: tabs[0],
+      tabs,
+      generating: false,
+      project,
+      selectedFiles: ['project.md'],
+      showFileSelector: false,
+    };
   }
 
   view = (state) => (
@@ -279,31 +291,6 @@ export default class Home extends Component {
         ? state.selectedFiles.filter(f => f !== file)
         : [...state.selectedFiles, file]
     }),
-  };
-
-  mounted = () => {
-    let project = loadProject();
-
-    if (!project) {
-      project = createProject('New Project');
-      saveProject(project);
-    }
-
-    const tabs = Object.keys(project.files)
-      .filter(name => name !== 'project.md')
-
-    return {
-      ...this.state,
-      project,
-      tabs,
-      leftContent: project.files['project.md'] || '',
-      rightContent: project.files[tabs[0]] || '',
-      leftTitle: 'Project Ideas',
-      rightTitle: beautifyLabel(tabs[0]),
-      activeTab: tabs[0],
-      selectedFiles: ['project.md'], // Initialize with project.md selected
-      showFileSelector: false,
-    };
   };
 
   unload = ({ el }) => {
