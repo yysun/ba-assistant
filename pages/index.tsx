@@ -12,7 +12,7 @@ const beautifyLabel = (filename: string) => {
 
 export default class Home extends Component {
   state = () => {
-    let project = loadProject();
+    let project: Project = loadProject();
 
     if (!project) {
       project = createProject('New Project');
@@ -78,7 +78,7 @@ export default class Home extends Component {
           $onpointermove='move'
           $onpointerup='drop'
           $onpointercancel='drop'
-          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize -mx-0.5 relative z-10 touch-none h-[calc(100%-2rem)] mt-12 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
+          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize touch-none h-[calc(100%-2.7rem)] mt-11 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
             }`}
         ></div>
         <div class="flex-1 min-w-[200px] overflow-hidden">
@@ -228,10 +228,13 @@ export default class Home extends Component {
       };
     },
 
-    generate: async (state) => {
-      if (state.generating || !state.activeTab) return;
+    toggleFileSelection: async (state, file: string) => {
+      const newSelectedFiles = state.selectedFiles.includes(file)
+        ? state.selectedFiles.filter(f => f !== file)
+        : [...state.selectedFiles, file];
 
-      state = { ...state, generating: true };
+      if (state.generating) return;
+      state = { ...state, generating: true, selectedFiles: newSelectedFiles };
 
       try {
         const prompts = await promptService.loadPrompts();
@@ -244,10 +247,10 @@ export default class Home extends Component {
         }
 
         // Wrap each selected file's content in XML-like tags
-        const selectedContent = state.selectedFiles
-          .map(file => {
-            const content = state.project.files[file];
-            const tagName = beautifyLabel(file).replace(/\s+/g, '');
+        const selectedContent = newSelectedFiles
+          .map(f => {
+            const content = state.project.files[f];
+            const tagName = beautifyLabel(f).replace(/\s+/g, '');
             return `<${tagName}>\n${content}\n</${tagName}>`;
           })
           .join('\n\n');
@@ -263,12 +266,13 @@ export default class Home extends Component {
           ...state,
           generating: false,
           rightContent: generatedContent,
-          showFileSelector: false
+          showFileSelector: false,
+          selectedFiles: newSelectedFiles
         };
 
       } catch (error) {
         console.error('Generation failed:', error);
-        return { ...state, generating: false };
+        return { ...state, generating: false, selectedFiles: newSelectedFiles };
       }
     },
 
@@ -285,12 +289,7 @@ export default class Home extends Component {
       showFileSelector: !state.showFileSelector
     }),
 
-    toggleFileSelection: (state, file: string) => ({
-      ...state,
-      selectedFiles: state.selectedFiles.includes(file)
-        ? state.selectedFiles.filter(f => f !== file)
-        : [...state.selectedFiles, file]
-    }),
+    generate: (state) => { }
   };
 
   unload = ({ el }) => {
