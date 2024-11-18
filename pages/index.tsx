@@ -25,6 +25,8 @@ export default class Home extends Component {
     tabs: [] as string[],
     generating: false,
     project: null as Project,
+    selectedFiles: [] as string[],
+    showFileSelector: false,
   }
 
   view = (state) => (
@@ -71,7 +73,44 @@ export default class Home extends Component {
           <div class="flex justify-between items-center">
             <h1>{state.rightTitle}</h1>
             <div class="flex gap-2">
-            <button 
+              <div class="relative">
+                <button 
+                  $onclick="toggleFileSelector"
+                  class="px-3 py-1 mb-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg flex items-center gap-1"
+                >
+                  Select Files ({state.selectedFiles.length})
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+                {state.showFileSelector && (
+                  <div class="absolute z-20 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                    <label class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={state.selectedFiles.includes('project.md')}
+                        $onchange={['toggleFileSelection', 'project.md']}
+                        class="mr-2"
+                      />
+                      Project Ideas
+                    </label>
+                    {state.tabs
+                      .filter(file => file !== state.activeTab)
+                      .map(file => (
+                      <label class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={state.selectedFiles.includes(file)}
+                          $onchange={['toggleFileSelection', file]}
+                          class="mr-2"
+                        />
+                        {beautifyLabel(file)}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button 
                 $onclick="generate"
                 disabled={state.generating}
                 class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -168,7 +207,7 @@ export default class Home extends Component {
       };
     },
 
-    'setTab': (state, filename: string) => {
+    setTab: (state, filename: string) => {
       return {
         ...state,
         activeTab: filename,
@@ -177,27 +216,31 @@ export default class Home extends Component {
       };
     },
 
-    'generate': async (state) => {
+    generate: async (state) => {
       if (state.generating || !state.activeTab) return;
 
       state = { ...state, generating: true };
 
       try {
-        // Load prompts
         const prompts = await promptService.loadPrompts();
-        
-        // Match prompt by name (remove .md and convert to title case)
         const promptName = beautifyLabel(state.activeTab);
         const prompt = prompts.find(p => p.name === promptName);
         
         if (!prompt) {
-          console.error('No matching prompt found for:', promptName);
+          console.error('No matching prompt found:', promptName);
           return { ...state, generating: false };
         }
 
-        // TODO: Replace this with actual API call to AI service
-        const projectIdeas = state.project.files['project.md'];
-        const generatedContent = `${prompt.text}\n\nBased on project ideas below:\n\n<ideas>\n${projectIdeas}<ideas>\n\n`;
+        // Wrap each selected file's content in XML-like tags
+        const selectedContent = state.selectedFiles
+          .map(file => {
+            const content = state.project.files[file];
+            const tagName = beautifyLabel(file).replace(/\s+/g, '');
+            return `<${tagName}>\n${content}\n</${tagName}>`;
+          })
+          .join('\n\n');
+
+        const generatedContent = `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
         
         if (state.project) {
           state.project.files[state.activeTab] = generatedContent;
@@ -207,7 +250,8 @@ export default class Home extends Component {
         return {
           ...state,
           generating: false,
-          rightContent: generatedContent
+          rightContent: generatedContent,
+          showFileSelector: false
         };
 
       } catch (error) {
@@ -216,13 +260,25 @@ export default class Home extends Component {
       }
     },
 
-    'copyContent': async (state) => {
+    copyContent: async (state) => {
       try {
         await navigator.clipboard.writeText(state.rightContent);
       } catch (err) {
         console.error('Failed to copy text:', err);
       }
     },
+
+    toggleFileSelector: (state) => ({
+      ...state,
+      showFileSelector: !state.showFileSelector
+    }),
+
+    toggleFileSelection: (state, file: string) => ({
+      ...state,
+      selectedFiles: state.selectedFiles.includes(file)
+        ? state.selectedFiles.filter(f => f !== file)
+        : [...state.selectedFiles, file]
+    }),
   };
 
   mounted = () => {
@@ -244,7 +300,9 @@ export default class Home extends Component {
       rightContent: project.files[tabs[0]] || '',
       leftTitle: 'Project Ideas',
       rightTitle: beautifyLabel(tabs[0]),
-      activeTab: tabs[0]
+      activeTab: tabs[0],
+      selectedFiles: ['project.md'], // Initialize with project.md selected
+      showFileSelector: false,
     };
   };
 
