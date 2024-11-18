@@ -118,7 +118,7 @@ export default class Layout extends Component {
         </div>
 
         {/* Main Content */}
-        <div id="main-content" class={`${state.sidebarOpen ? 'ml-64' : 'ml-14'} flex-1 min-h-screen transition-all duration-200 bg-gray-50 dark:bg-gray-900`}>
+        <div id="main-content" class={`${state.sidebarOpen ? 'ml-64' : 'ml-14'} flex-1 h-screen overflow-y-auto transition-all duration-200 bg-gray-50 dark:bg-gray-900`}>
           <main id="main-app">
             {state.children}
           </main>

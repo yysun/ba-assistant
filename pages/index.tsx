@@ -28,9 +28,9 @@ export default class Home extends Component {
   }
 
   view = (state) => (
-    <>
+    <div class="flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header class="bg-white dark:bg-gray-800 shadow-sm text-xs">
+      <header class="bg-white dark:bg-gray-800 shadow-sm text-xs flex-none">
         <div class="flex items-center justify-between px-6 py-4">
           <div class="flex-1 flex items-center gap-4">
             {state.tabs.map((tab) => (
@@ -47,13 +47,13 @@ export default class Home extends Component {
       </header>
 
       {/* Main Content */}
-      <div class="flex h-[calc(100vh-30px)] gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
+      <div class="flex flex-1 gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
         <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
           width: `${state.leftWidth}%`
         }}>
           <h1>{state.leftTitle}</h1>
           <textarea
-            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
+            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto"
             value={state.leftContent}
             $oninput={['updateLeft']}
           ></textarea>
@@ -92,13 +92,13 @@ export default class Home extends Component {
             </div>
           </div>
           <textarea
-            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
+            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto"
             value={state.rightContent}
             $oninput={['updateRight']}
           ></textarea>
         </div>
       </div>
-    </>
+    </div>
   );
 
   update = {
