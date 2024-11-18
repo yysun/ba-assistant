@@ -18,8 +18,9 @@ const menuItems = [
   }
 ];
 
-const getSystemDarkMode = () => 
+const getSystemDarkMode = () =>
   window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
 
 export default class Layout extends Component {
   state = {
@@ -36,11 +37,9 @@ export default class Layout extends Component {
     },
 
     'toggle-dark-mode': state => {
-      document.documentElement.classList.remove('dark');
-      state.darkMode = !state.darkMode;
-      if (state.darkMode) {
-        document.documentElement.classList.add('dark');
-      }
+      const main = document.getElementById('main-app') as HTMLElement;
+      const children = Array.from(main?.children || []);
+      return { ...state, darkMode: !state.darkMode, children };
     },
   };
 
@@ -50,7 +49,7 @@ export default class Layout extends Component {
       return (path === '/') ? pathname === path : pathname.startsWith(path);
     };
     return (
-      <div class="min-h-screen font-[-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif] dark:bg-gray-900 bg-gray-50 transition-colors duration-200">
+      <div class={`${state.darkMode ? 'dark': '' } min-h-screen font-[-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif] dark:bg-gray-900 bg-gray-50 transition-colors duration-200`}>
         {/* Sidebar */}
         <div id="sidebar" class={`fixed inset-y-0 left-0 ${state.sidebarOpen ? 'w-64' : 'w-14'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-200 ease-in-out z-10 flex flex-col`}>
           {/* App Logo */}
@@ -59,7 +58,7 @@ export default class Layout extends Component {
               <span class="text-gray-900 dark:text-white whitespace-nowrap">BA Assistant</span>
             </div>
             <div class={`absolute inset-0 p-4 flex items-center transition-all duration-200 ${state.sidebarOpen ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
-              <span class="text-gray-900 dark:text-white">BB</span>
+              <span class="text-gray-900 dark:text-white">BA</span>
             </div>
           </div>
 
