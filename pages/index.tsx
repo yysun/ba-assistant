@@ -70,13 +70,26 @@ export default class Home extends Component {
         <div class="flex-1 min-w-[200px] overflow-hidden">
           <div class="flex justify-between items-center">
             <h1>{state.rightTitle}</h1>
+            <div class="flex gap-2">
             <button 
-              $onclick="generate"
-              disabled={state.generating}
-              class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {state.generating ? 'Generating...' : 'Generate'}
-            </button>
+                $onclick="generate"
+                disabled={state.generating}
+                class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {state.generating ? 'Generating...' : 'Generate'}
+              </button>
+              <button 
+                $onclick="copyContent"
+                class="px-3 py-1 mb-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                title="Copy to clipboard"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+              </button>
+
+            </div>
           </div>
           <textarea
             class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100"
@@ -200,6 +213,14 @@ export default class Home extends Component {
       } catch (error) {
         console.error('Generation failed:', error);
         return { ...state, generating: false };
+      }
+    },
+
+    'copyContent': async (state) => {
+      try {
+        await navigator.clipboard.writeText(state.rightContent);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
       }
     },
   };
