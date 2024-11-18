@@ -1,34 +1,56 @@
-## BA Assistant
+# BA Assistant
 
-BA Assistant is a tool helps business analysts building requirement documents using AI LLM.
+BA Assistant is a tool that helps business analysts build requirement documents using AI Language Models (LLM).
 
-**Feature Summary:**
+## Core Features
 
-- **Project Management**
-  - Create and manage one project stored in the local storage.
-  - A project is a folder that contains documents including:
-    - Project Ideas
-    - User Story Map
-    - Customer Journey Map
-    - Pages and Navigations
-    - Pages and User Stories
-    - Sprint Planning
-  - Combine the project ideas with the prompts for LLM
-  - Call LLM API to generate the document content
-  - Export the project to a folder
-  - Open a project from a folder
-  - If a project is opened from a folder, always save to that folder
+### 1. Project Management
+- Single project workspace with local storage support
+- Project folder structure:
+  - project.md (Project Ideas)
+  - user-story-map.md
+  - customer-journey-map.md
+  - pages-and-navigations.md
+  - pages-and-user-stories.md
+  - sprint-planning.md
+- Project Operations:
+  - Create/Open projects
+  - Auto-save functionality
+  - Export to folder
+  - Local storage integration
 
-- **Promot Mangement**
+### 2. Prompt Management
+- Create, edit, and delete prompts
+- Default prompt templates for:
+  - User Story Map
+  - Customer Journey Map
+  - Pages and Navigations
+  - Pages and User Stories
+  - Sprint Planning
+- Custom prompt creation support
+- Local storage integration
 
-  - Create and manage prompts 
-  - User can create custom prompts
+### 3. Document Generation
+- AI LLM integration for content generation
+- Multi-file content generation support
+- Document-prompt matching
+- Clipboard integration
 
-- **Configuration**
-  - Select and configure different AI language models to use for document generation.
+### 4. User Interface
+- Split-panel layout:
+  - Left: Project ideas
+  - Right: Document content
+- Tab-based navigation
+- Document selection system
+- Copy-to-clipboard functionality
 
+### 5. Configuration
+- Configurable AI language model settings
+- Customizable generation parameters
 
-## Prompt Management
+## Technical Implementation
+
+### Prompt Management
 
 - create a module for manage promts, it shoud be able to:
 
@@ -41,7 +63,7 @@ BA Assistant is a tool helps business analysts building requirement documents us
   - [X] make default prompt list of 'User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan' if no prompts are loaded
 
 
-## Project Management
+### Project Management
 
 - create a module for manage project, it shoud be able to:
   - [x] do not manage projects, only handle one project
@@ -62,7 +84,7 @@ BA Assistant is a tool helps business analysts building requirement documents us
   - [x] user can create new markdown files and create new prompt for it
 
 
-## Home Page
+### Home Page
 
 - [x] load the project from local storage
 - [x] create a new project if no project is loaded
@@ -77,4 +99,4 @@ BA Assistant is a tool helps business analysts building requirement documents us
 - [x] create a select button to the left of the 'generate' button
   - [x] it should show the list of files to allow selecting multiple files 
   - [x] the selected file content will be used to generate prompt
-- [ ] call the LLM API to generate the document content
+- [x] call the LLM API to generate the document content
