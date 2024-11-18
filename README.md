@@ -70,7 +70,8 @@ BA Assistant is a tool helps business analysts building requirement documents us
 - [x] beautigy the header tabs like 'User Story Map'
 - [x] display the document content in the right panel when header tabs are clicked
 - [x] auto save the document when user switch to another tab
-- [x] add a 'Generate' button to combine the ideas with the match prompt
+- [x] match file with the prompts
+- [x] generate the document content using the matching prompt
 - [X] add a copy icon button to copy the text area content to the clipboard
 - [ ] create a select button to the left of the 'generate' button
   - [ ] it should show the list of files to allow selecting multiple files 

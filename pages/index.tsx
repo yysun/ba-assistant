@@ -11,8 +11,9 @@ const beautifyLabel = (filename: string) => {
 };
 
 export default class Home extends Component {
-  state = () => {
+  state = async () => {
     let project: Project = loadProject();
+    const prompts = await promptService.loadPrompts();
 
     if (!project) {
       project = createProject('New Project');
@@ -20,7 +21,7 @@ export default class Home extends Component {
     }
 
     const tabs = Object.keys(project.files)
-      .filter(name => name !== 'project.md')
+      .filter(name => name !== 'project.md');
 
     return {
       dragging: false,
@@ -38,11 +39,33 @@ export default class Home extends Component {
       project,
       selectedFiles: ['project.md'],
       showFileSelector: false,
+      promptContent: '',
+      prompts // Store loaded prompts in state
     };
   }
 
-  view = (state) => (
-    <div class="flex flex-col h-screen overflow-hidden">
+  view = (state) => {
+    const generatePrompt = () => {
+      const promptName = beautifyLabel(state.activeTab);
+      const prompt = state.prompts?.find(p => p.name === promptName);
+      
+      if (!prompt) {
+        console.error('No matching prompt found:', promptName);
+        return '';
+      }
+
+      const selectedContent = state.selectedFiles
+        .map(file => {
+          const content = state.project.files[file];
+          const tagName = beautifyLabel(file).replace(/\s+/g, '');
+          return `<${tagName}>\n${content}\n</${tagName}>`;
+        })
+        .join('\n\n');
+
+      return `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
+    }
+
+    return <div class="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <header class="bg-white dark:bg-gray-800 shadow-sm text-xs flex-none">
         <div class="flex items-center justify-between px-6 py-4">
@@ -67,7 +90,7 @@ export default class Home extends Component {
         }}>
           <h1>{state.leftTitle}</h1>
           <textarea
-            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto"
+            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600"
             value={state.leftContent}
             $oninput={['updateLeft']}
           ></textarea>
@@ -81,7 +104,7 @@ export default class Home extends Component {
           class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize touch-none h-[calc(100%-2.7rem)] mt-11 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
             }`}
         ></div>
-        <div class="flex-1 min-w-[200px] overflow-hidden">
+        <div class="flex-1 min-w-[200px] overflow-hidden flex flex-col">
           <div class="flex justify-between items-center">
             <h1>{state.rightTitle}</h1>
             <div class="flex gap-2">
@@ -142,15 +165,28 @@ export default class Home extends Component {
 
             </div>
           </div>
-          <textarea
-            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto"
-            value={state.rightContent}
-            $oninput={['updateRight']}
-          ></textarea>
+          <div class="flex-1 flex flex-col">
+            {/* Prompt Area */}
+            <div class="h-1/3 mb-2">
+              <textarea
+                class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
+                value={state.promptContent || generatePrompt()}
+                placeholder="Generated prompt/response will appear here..."
+              ></textarea>
+            </div>
+            {/* Document Area */}
+            <div class="h-2/3">
+              <textarea
+                class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
+                value={state.rightContent}
+                $oninput={['updateRight']}
+              ></textarea>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  );
+  }
 
   update = {
 
@@ -209,7 +245,7 @@ export default class Home extends Component {
 
     updateRight: (state, e: Event) => {
       const newContent = (e.target as HTMLTextAreaElement).value;
-      if (state.project) {
+      if (state.project && state.activeTab) {
         state.project.files[state.activeTab] = newContent;
         saveProject(state.project);
       }
@@ -220,65 +256,36 @@ export default class Home extends Component {
     },
 
     setTab: (state, filename: string) => {
+      if (state.project) {
+        state.project.files[state.activeTab] = state.rightContent;
+        saveProject(state.project);
+      }
+
       return {
         ...state,
         activeTab: filename,
         rightTitle: beautifyLabel(filename),
-        rightContent: state.project?.files[filename] || ''
+        rightContent: state.project?.files[filename] || '',
+        promptContent: '' // Reset prompt content to trigger regeneration
       };
     },
 
-    toggleFileSelection: async (state, file: string) => {
+    toggleFileSelection: (state, file: string) => {
       const newSelectedFiles = state.selectedFiles.includes(file)
         ? state.selectedFiles.filter(f => f !== file)
         : [...state.selectedFiles, file];
 
-      if (state.generating) return;
-      state = { ...state, generating: true, selectedFiles: newSelectedFiles };
-
-      try {
-        const prompts = await promptService.loadPrompts();
-        const promptName = beautifyLabel(state.activeTab);
-        const prompt = prompts.find(p => p.name === promptName);
-        
-        if (!prompt) {
-          console.error('No matching prompt found:', promptName);
-          return { ...state, generating: false };
-        }
-
-        // Wrap each selected file's content in XML-like tags
-        const selectedContent = newSelectedFiles
-          .map(f => {
-            const content = state.project.files[f];
-            const tagName = beautifyLabel(f).replace(/\s+/g, '');
-            return `<${tagName}>\n${content}\n</${tagName}>`;
-          })
-          .join('\n\n');
-
-        const generatedContent = `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
-        
-        if (state.project) {
-          state.project.files[state.activeTab] = generatedContent;
-          saveProject(state.project);
-        }
-
-        return {
-          ...state,
-          generating: false,
-          rightContent: generatedContent,
-          showFileSelector: false,
-          selectedFiles: newSelectedFiles
-        };
-
-      } catch (error) {
-        console.error('Generation failed:', error);
-        return { ...state, generating: false, selectedFiles: newSelectedFiles };
-      }
+      return {
+        ...state,
+        selectedFiles: newSelectedFiles,
+        showFileSelector: false,
+        promptContent: '' // Reset prompt content to trigger regeneration
+      };
     },
 
     copyContent: async (state) => {
       try {
-        await navigator.clipboard.writeText(state.rightContent);
+        await navigator.clipboard.writeText(state.promptContent);
       } catch (err) {
         console.error('Failed to copy text:', err);
       }
@@ -289,7 +296,8 @@ export default class Home extends Component {
       showFileSelector: !state.showFileSelector
     }),
 
-    generate: (state) => { }
+    generate: async (state) => { },
+
   };
 
   unload = ({ el }) => {
