@@ -101,12 +101,12 @@ export default class Home extends Component {
 
       {/* Main Content */}
       <div class="flex flex-1 gap-0 select-none overflow-hidden p-6 text-gray-600 dark:text-gray-300 text-xs" ref={el => state.container = el}>
-        <div class={`flex-none min-w-[200px] overflow-hidden`} style={{
+        <div class={`flex-none min-w-[200px] overflow-hidden flex flex-col`} style={{
           width: `${state.leftWidth}%`
         }}>
-          <h1>{state.leftTitle}</h1>
+          <h1 >{state.leftTitle}</h1>
           <textarea
-            class="w-full h-[calc(100%-2rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600"
+            class="flex-1 w-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600"
             value={state.leftContent}
             $oninput={['updateLeft']}
           ></textarea>
@@ -117,8 +117,7 @@ export default class Home extends Component {
           $onpointermove='move'
           $onpointerup='drop'
           $onpointercancel='drop'
-          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize touch-none h-[calc(100%-2.7rem)] mt-11 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''
-            }`}
+          class={`w-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-col-resize touch-none h-full mx-2 ${state.dragging ? 'bg-gray-300 dark:bg-gray-600' : ''}`}
         ></div>
         <div class="flex-1 min-w-[200px] overflow-hidden flex flex-col">
           <div class="flex justify-between items-center">
