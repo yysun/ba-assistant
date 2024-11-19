@@ -1,3 +1,22 @@
+/**
+ * Project Management Module
+ * ------------------------
+ * Core project file management with dual storage for BA documents.
+ * 
+ * Data Model:
+ * - Project: { name, folder?, files: { [filename]: content } }
+ * - Default files: project.md, user-story-map.md, etc.
+ * 
+ * Storage:
+ * - Primary: localStorage for stateful persistence
+ * - Secondary: FileSystem API for on-disk backups (optional)
+ * 
+ * Operations:
+ * - createProject: Initialize with default BA templates 
+ * - saveProject: Sync to both storage layers
+ * - loadProject: Restore from localStorage
+ */
+
 export interface Project {
   name: string;
   folder?: string;

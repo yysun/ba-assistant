@@ -1,3 +1,21 @@
+/**
+ * Prompt Management Service
+ * ------------------------
+ * Manages AI prompt templates for BA document generation.
+ * 
+ * Data Model:
+ * - Prompt: { id: UUID, name: string, text: string }
+ * - Built-in templates: Story Map, Journey Map, Navigation, etc.
+ * 
+ * Storage:
+ * - localStorage with fallback to DEFAULT_PROMPTS
+ * 
+ * Service Pattern:
+ * - Singleton promptService instance
+ * - CRUD operations with async interface
+ * - Default prompts as fallback templates
+ */
+
 export type Prompt = {
   id: string;
   name: string;

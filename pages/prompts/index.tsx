@@ -1,3 +1,20 @@
+/**
+ * Prompt Management Page
+ * =====================
+ * Handles CRUD operations for AI prompts with an inline modal editor.
+ * 
+ * Features:
+ * - Grid-based prompt listing 
+ * - Inline modal for create/edit
+ * - Direct state mutation pattern for form inputs
+ * - Dark mode compatible UI
+ * 
+ * Technical:
+ * - AppRun component with async state initialization
+ * - Uses promptService for data persistence
+ * - Local event handling for all CRUD operations
+ */
+
 import { app, Component } from 'apprun';
 import { Prompt, promptService } from '../_data/prompts';
 

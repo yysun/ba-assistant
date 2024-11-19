@@ -1,3 +1,21 @@
+/**
+ * App Layout Component
+ * -------------------
+ * Main application shell providing:
+ * - Collapsible sidebar navigation
+ * - Dark/light theme toggle
+ * - Responsive layout structure
+ * 
+ * Core Features:
+ * - Dynamic navigation menu
+ * - System-aware dark mode
+ * - Content area with dynamic width
+ * 
+ * Dependencies: 
+ * - AppRun for component lifecycle
+ * - Tailwind CSS for styling
+ */
+
 import { app, Component } from 'apprun';
 
 const menuItems = [

@@ -1,3 +1,26 @@
+/**
+ * Business Analyst Assistant Home Page
+ * ===================================
+ * A dual-pane editor for managing business analysis documents with AI prompts.
+ * 
+ * Key Features:
+ * - Resizable split panes for project ideas and topic documents 
+ * - Tabbed interface for multiple documents
+ * - File system integration for saving/loading projects
+ * - AI prompt generation with context from selected documents
+ * - Dark mode compatible UI
+ * 
+ * Structure:
+ * - State: Project data, UI state, selected files, and prompts
+ * - View: Split pane layout with header, file selector, and editors
+ * - Update: Event handlers for drag resize, content changes, file ops
+ * 
+ * Dependencies:
+ * - AppRun for component architecture
+ * - File System Access API for directory operations
+ * - Project and Prompt services for data management
+ */
+
 /// <reference path="../types/file-system.d.ts" />
 import { app, Component } from 'apprun';
 import { Project, createProject, loadProject, saveProject } from './_data/project';
