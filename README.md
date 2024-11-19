@@ -99,4 +99,8 @@ BA Assistant is a tool that helps business analysts build requirement documents 
 - [x] create a select button to the left of the 'generate' button
   - [x] it should show the list of files to allow selecting multiple files 
   - [x] the selected file content will be used to generate prompt
-- [x] call the LLM API to generate the document content
+- [x] add a 'Save' button to the page header in the same line of the tabs, aligned to the right
+  - [x] the save button should open a dialog to select a folder
+  - [x] once user selected a folder
+  - [x] update the project's folder property 
+  - [x] savs all files to the project's folder one by one

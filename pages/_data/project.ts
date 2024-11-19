@@ -20,8 +20,24 @@ export const createProject = (name: string): Project => ({
   files: DEFAULT_FILES.reduce((acc, file) => ({ ...acc, [file]: '' }), {})
 });
 
-export const saveProject = (project: Project) => {
+export const saveProject = async (project: Project, dirHandle?: FileSystemDirectoryHandle) => {
+  // Always save to localStorage
   localStorage.setItem('ba-assistant-project', JSON.stringify(project));
+
+  // If directory handle is provided, save files to the file system
+  if (dirHandle) {
+    try {
+      for (const [filename, content] of Object.entries(project.files)) {
+        const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+      }
+    } catch (err) {
+      console.error('Error saving files to directory:', err);
+      throw err;
+    }
+  }
 };
 
 export const loadProject = (): Project | null => {

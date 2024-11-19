@@ -1,3 +1,4 @@
+/// <reference path="../types/file-system.d.ts" />
 import { app, Component } from 'apprun';
 import { Project, createProject, loadProject, saveProject } from './_data/project';
 import { promptService } from './_data/prompts';
@@ -8,6 +9,16 @@ const beautifyLabel = (filename: string) => {
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+};
+
+// Add these functions before the Component class
+const verifyPermission = async (dirHandle: FileSystemDirectoryHandle) => {
+  const options: FileSystemPermissionMode = 'readwrite';
+  // Check if we already have permission, if so, return true
+  if ((await dirHandle.queryPermission({ mode: options })) === 'granted') return true;
+  // Request permission if we don't have it
+  if ((await dirHandle.requestPermission({ mode: options })) === 'granted') return true;
+  return false;
 };
 
 export default class Home extends Component {
@@ -79,6 +90,12 @@ export default class Home extends Component {
               </a>
             ))}
           </div>
+          <button
+            $onclick="selectFolderAndSave"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+          >
+            Save
+          </button>
         </div>
       </header>
 
@@ -158,13 +175,13 @@ export default class Home extends Component {
                 </button>
               </div>
               {/* Generate Button */}
-              <button
+              {/* <button
                 $onclick="generate"
                 disabled={state.generating}
                 class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {state.generating ? 'Generating...' : 'Generate'}
-              </button>
+              </button> */}
             </div>
           </div>
           <div class="flex-1 flex flex-col">
@@ -317,7 +334,44 @@ export default class Home extends Component {
       showFileSelector: !state.showFileSelector
     }),
 
-    generate: async (state) => { },
+    selectFolderAndSave: async (state) => {
+      try {
+        const dirHandle = await window.showDirectoryPicker();
+        const hasPermission = await verifyPermission(dirHandle);
+        
+        if (!hasPermission) {
+          alert('Permission denied to access the selected folder');
+          return state;
+        }
+
+        if (state.project) {
+          // Save current content before saving to files
+          state.project.files['project.md'] = state.leftContent;
+          state.project.files[state.activeTab] = state.rightContent;
+          state.project.folder = dirHandle.name;
+          await saveProject(state.project, dirHandle);
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          // User cancelled the folder picker
+          return state;
+        }
+        console.error('Failed to save files:', err);
+        alert('Failed to save files: ' + err.message);
+      }
+      return state;
+    },
+
+    save: (state) => {
+      if (state.project) {
+        // Save both left and right content before saving project
+        state.project.files['project.md'] = state.leftContent;
+        state.project.files[state.activeTab] = state.rightContent;
+        saveProject(state.project);
+      }
+    },
+
+    // generate: async (state) => { },
 
     '@document-click': (state, e: MouseEvent) => {
       if (!state.showFileSelector) return;
