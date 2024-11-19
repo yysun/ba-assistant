@@ -57,7 +57,7 @@ export default class Prompts extends Component<State> {
         </button>
       </div>
 
-      <div class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {state.prompts.map(prompt => <div key={prompt.id}
           class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border dark:border-gray-700"
         >

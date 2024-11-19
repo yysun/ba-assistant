@@ -61,7 +61,7 @@ BA Assistant is a tool that helps business analysts build requirement documents 
   - [X] delete a prompt
   - [X] each prompt should have a name, and the prompt text
   - [X] make default prompt list of 'User Story Map', 'Customer Journey Map', 'Pages and Navs', 'Page and Stories', 'Sprint Plan' if no prompts are loaded
-
+  - [x] display the prompt cards in three columns on large screen; two columns on medium screen; one column on small screen
 
 ### Project Management
 
@@ -82,7 +82,6 @@ BA Assistant is a tool that helps business analysts build requirement documents 
       - sprint-planning.md
   - [x] each markdown file is generated using the prompts
   - [x] user can create new markdown files and create new prompt for it
-
 
 ### Home Page
 
