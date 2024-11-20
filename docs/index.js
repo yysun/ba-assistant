@@ -231,7 +231,9 @@ ${selectedContent}
       }
       return {
         ...state,
-        leftContent: newContent
+        leftContent: newContent,
+        promptContent: ""
+        // Reset prompt content to trigger regeneration
       };
     },
     updateRight: (state, e) => {

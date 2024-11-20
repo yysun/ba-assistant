@@ -281,7 +281,8 @@ export default class Home extends Component {
       }
       return {
         ...state,
-        leftContent: newContent
+        leftContent: newContent,
+        promptContent: '' // Reset prompt content to trigger regeneration
       };
     },
 

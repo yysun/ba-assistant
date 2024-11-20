@@ -162,7 +162,7 @@ var route = async (path) => {
 };
 apprun_default.route = route;
 window.onload = async () => {
-  components.map((item) => add_component(item, "/ba-assistant"));
+  components.map((item) => add_component(item, `${base_dir}`));
   apprun_default.route(location.pathname);
 };
 document.body.addEventListener("click", (e) => {
