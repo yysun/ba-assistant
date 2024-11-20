@@ -1,3 +1,3 @@
 export default {
-  base_dir: '/ba-assistant'
+  base_dir: '/'
 }
