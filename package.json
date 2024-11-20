@@ -7,7 +7,7 @@
     "test": "jest",
     "start": "node server.js",
     "dev": "apprun-site dev",
-    "build": "apprun-site build -c -r"
+    "build": "apprun-site build -c -o docs"
   },
   "keywords": [],
   "author": "",

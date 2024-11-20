@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import server, { config } from 'apprun-site/server.js';
 const port = process.env.PORT || 8080;
-const app = server();
+const app = server({ output: 'docs', base_dir: '/ba-assistant', ssr: false });
 const { root, ssr, save, live_reload } = config;
 app.listen(port, () => {
   console.log('Your app is listening on:', `http://localhost:${port}`);
