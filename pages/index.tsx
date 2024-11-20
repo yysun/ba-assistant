@@ -97,7 +97,7 @@ export default class Home extends Component {
 
       return `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
     }
-
+    if (!state.promptContent) state.promptContent = generatePrompt();
     return <div class="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <header class="bg-white dark:bg-gray-800 shadow-sm text-xs flex-none">
@@ -211,7 +211,7 @@ export default class Home extends Component {
             <div class="h-1/3 mb-2">
               <textarea
                 class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
-                value={state.promptContent || generatePrompt()}
+                value={state.promptContent}
                 placeholder="Generated prompt/response will appear here..."
                 $oninput={['updatePrompt']}
               ></textarea>

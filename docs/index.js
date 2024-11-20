@@ -103,6 +103,7 @@ ${selectedContent}
 
 `;
     };
+    if (!state.promptContent) state.promptContent = generatePrompt();
     return /* @__PURE__ */ app_default.h("div", { class: "flex flex-col h-screen overflow-hidden" }, /* @__PURE__ */ app_default.h("header", { class: "bg-white dark:bg-gray-800 shadow-sm text-xs flex-none" }, /* @__PURE__ */ app_default.h("div", { class: "flex items-center justify-between px-6 py-4" }, /* @__PURE__ */ app_default.h("div", { class: "flex-1 flex items-center gap-4" }, state.tabs.map((tab) => /* @__PURE__ */ app_default.h(
       "a",
       {
@@ -174,7 +175,7 @@ ${selectedContent}
       "textarea",
       {
         class: "w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg",
-        value: state.promptContent || generatePrompt(),
+        value: state.promptContent,
         placeholder: "Generated prompt/response will appear here...",
         $oninput: ["updatePrompt"]
       }
