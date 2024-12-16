@@ -73,3 +73,15 @@ document.addEventListener('click', (e) => {
 ## Styles
 
 - Uses `class` attribute instead of `className`.
+
+
+## Server API
+
+The API endpoints are served at the path /api/[endpoint]. For example, the api/hello.js file will be served at /api/hello.
+
+```javascript
+// api/hello.js
+export default (req, res, next) => {
+  res.json({ hello: 'world' });
+};
+```
