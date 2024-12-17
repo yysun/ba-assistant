@@ -14,13 +14,32 @@
 import { Component } from 'apprun';
 import {
   State,
-  ParsedEvent,
   DragEvent,
   InputEvent,
   ERROR_MESSAGES
 } from './types';
 import { saveProject } from '../_services/project';
 import { processStreamResponse } from '../_services/sse';
+
+// Event types from server
+interface ContentEvent {
+  content: string;
+}
+
+interface ErrorEvent {
+  message: string;
+}
+
+type ParsedEvent = {
+  event: 'content';
+  data: ContentEvent;
+} | {
+  event: 'success';
+  data: Record<string, never>;
+} | {
+  event: 'error';
+  data: ErrorEvent;
+};
 
 // Utility Functions
 const beautifyLabel = (filename: string) => {
@@ -204,11 +223,41 @@ const save = (state: State) => {
 
 const render = (_: any, state: State) => state;
 
+const processEvents = (state: State, event: ParsedEvent): State => {
+  switch (event.event) {
+    case 'content':
+      return {
+        ...state,
+        rightContent: state.rightContent + event.data.content,
+        generating: true
+      };
+    case 'success':
+      // Save the generated content
+      if (state.project && state.activeTab) {
+        state.project.files[state.activeTab] = state.rightContent;
+        saveProject(state.project);
+      }
+      return {
+        ...state,
+        generating: false
+      };
+    case 'error':
+      alert(event.data.message);
+      return {
+        ...state,
+        generating: false
+      };
+    default:
+      return state;
+  }
+};
+
 const generate = async (state: State, component: Component<State>) => {
   if (!state.promptContent) return state;
 
   // Set initial generating state
-  component.run('render', { ...state, generating: true, rightContent: '' });
+  let currentState = { ...state, generating: true, rightContent: '' };
+  component.run('render', currentState);
 
   try {
     const response = await fetch('/api/chat', {
@@ -226,38 +275,21 @@ const generate = async (state: State, component: Component<State>) => {
       throw new Error(`${ERROR_MESSAGES.HTTP_ERROR} ${response.status}`);
     }
 
-    let content = '';
+    let updatedState = currentState;
     await processStreamResponse<ParsedEvent>(
       response,
       (event) => {
-        if (event.error) throw new Error(event.error);
-        if (event.text) {
-          content += event.text;
-          component.run('render', {
-            ...state,
-            rightContent: content,
-            generating: !event.done
-          });
-        }
+        updatedState = processEvents(updatedState, event);
+        component.run('render', updatedState);
       }
     );
 
-    // Save the generated content
-    if (state.project && state.activeTab) {
-      state.project.files[state.activeTab] = content;
-      saveProject(state.project);
-    }
-
-    return {
-      ...state,
-      rightContent: content,
-      generating: false
-    };
+    return updatedState;
 
   } catch (error) {
     console.error('Generation error:', error);
     alert(`${ERROR_MESSAGES.GENERATION_ERROR} ${error.message}`);
-    return { ...state, generating: false };
+    return { ...currentState, generating: false };
   }
 };
 

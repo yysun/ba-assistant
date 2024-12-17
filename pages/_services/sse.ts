@@ -4,26 +4,40 @@
  * Provides utilities for handling SSE streams in a standardized way across the application.
  * Features:
  * - Stream response processing with buffer management
- * - Event parsing and validation
+ * - Event parsing and validation with full event type support
  * - Error handling and proper cleanup
+ * - Support for typed events with event names and data
  */
 
-// Generic event parser that can be extended for specific event types
-export const parseSSEEvent = <T>(line: string, prefix: string = 'data: '): T | null => {
+export interface SSEEvent<T extends object = object> {
+  event: string;
+  data: T;
+}
+
+interface ErrorEvent {
+  message: string;
+}
+
+// Generic event parser that returns the full SSE event object
+export const parseSSEEvent = <T extends object>(line: string, prefix: string = 'data: '): SSEEvent<T> | null => {
   if (!line.startsWith(prefix)) return null;
   try {
-    return JSON.parse(line.slice(prefix.length));
+    const event = JSON.parse(line.slice(prefix.length)) as SSEEvent<T>;
+    if (event.event === 'error' && (event.data as unknown as ErrorEvent).message) {
+      throw new Error((event.data as unknown as ErrorEvent).message);
+    }
+    return event;
   } catch (e) {
     console.error('SSE Parse Error:', e);
-    return null;
+    throw e; // Re-throw to handle in the stream processor
   }
 };
 
 // Generic stream processor that can be used across different components
-export const processStreamResponse = async <T>(
+export const processStreamResponse = async <T extends object>(
   response: Response,
-  onEvent: (event: T) => void,
-  eventParser: (line: string) => T | null = (line) => parseSSEEvent<T>(line)
+  onEvent: (event: SSEEvent<T>) => void,
+  eventParser: (line: string) => SSEEvent<T> | null = (line) => parseSSEEvent<T>(line)
 ): Promise<void> => {
   if (!response.body) {
     throw new Error('No response body available');
@@ -39,8 +53,13 @@ export const processStreamResponse = async <T>(
 
       if (done) {
         if (buffer.trim()) {
-          const event = eventParser(buffer);
-          if (event) onEvent(event);
+          try {
+            const event = eventParser(buffer);
+            if (event) onEvent(event);
+          } catch (e) {
+            // Handle parse errors but continue processing
+            console.error('Error parsing final buffer:', e);
+          }
         }
         return;
       }
@@ -50,8 +69,15 @@ export const processStreamResponse = async <T>(
       buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
       for (const line of lines) {
-        const event = eventParser(line);
-        if (event) onEvent(event);
+        if (line.trim()) {
+          try {
+            const event = eventParser(line);
+            if (event) onEvent(event);
+          } catch (e) {
+            // Handle parse errors but continue processing
+            console.error('Error parsing line:', e);
+          }
+        }
       }
     }
   } finally {

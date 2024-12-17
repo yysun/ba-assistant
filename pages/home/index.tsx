@@ -71,25 +71,23 @@ export default class Home extends Component<State> {
   }
 
   view = (state: State) => {
-    const generatePrompt = () => {
+    // Generate prompt only when needed (when promptContent is empty)
+    if (!state.generating) {
       const promptName = beautifyLabel(state.activeTab);
       const prompt = state.prompts?.find(p => p.name === promptName);
-      if (!prompt) {
-        console.error('No matching prompt found:', promptName);
-        return '';
+      if (prompt) {
+        const selectedContent = state.selectedFiles
+          .map(file => {
+            const content = state.project.files[file];
+            const tagName = beautifyLabel(file).replace(/\s+/g, '');
+            return `<${tagName}>\n${content}\n</${tagName}>`;
+          })
+          .join('\n\n');
+
+        state.promptContent = `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
       }
-
-      const selectedContent = state.selectedFiles
-        .map(file => {
-          const content = state.project.files[file];
-          const tagName = beautifyLabel(file).replace(/\s+/g, '');
-          return `<${tagName}>\n${content}\n</${tagName}>`;
-        })
-        .join('\n\n');
-
-      return `${prompt.text}\n\nBased on the following files:\n\n${selectedContent}\n\n`;
     }
-    if (!state.promptContent) state.promptContent = generatePrompt();
+
     return <div class="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <header class="bg-white dark:bg-gray-800 shadow-sm text-xs flex-none">
@@ -119,7 +117,7 @@ export default class Home extends Component<State> {
         <div class={`flex-none min-w-[200px] overflow-hidden flex flex-col`} style={{
           width: `${state.leftWidth}%`
         }}>
-          <h1 >{state.leftTitle}</h1>
+          <h1>{state.leftTitle}</h1>
           <textarea
             class="flex-1 w-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600"
             value={state.leftContent}
@@ -192,7 +190,11 @@ export default class Home extends Component<State> {
               <button
                 $onclick={["generate", this]}
                 disabled={state.generating}
-                class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                class={`px-3 py-1 mb-2 text-white rounded-lg transition-colors ${
+                  state.generating 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
               >
                 {state.generating ? 'Generating...' : 'Generate'}
               </button>
@@ -206,6 +208,7 @@ export default class Home extends Component<State> {
                 value={state.promptContent}
                 placeholder="Generated prompt/response will appear here..."
                 $oninput={['updatePrompt']}
+                readOnly={state.generating}
               ></textarea>
             </div>
             {/* Document Area */}
@@ -214,6 +217,7 @@ export default class Home extends Component<State> {
                 class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
                 value={state.rightContent}
                 $oninput={['updateRight']}
+                readOnly={state.generating}
               ></textarea>
             </div>
           </div>

@@ -6,16 +6,12 @@
  * - Uses SSE middleware for streaming responses
  * - Integrates with Ollama chat service for LLM responses
  * - Supports proper error handling and connection cleanup
+ * - Uses standardized SSE event format matching features.js
  * 
- * Request format:
- * {
- *   messages: [{ role: "user"|"assistant", content: string }]
- * }
- * 
- * Response:
- * - Streams chunks of text as they are generated
- * - Each chunk is sent as an SSE event
- * - Final response includes complete generated text
+ * Events:
+ * - feature: Streams chunks of generated text
+ * - success: Final completion
+ * - error: Any errors during generation
  */
 
 import sseMiddleware from '../middleware/sse.js';
@@ -29,35 +25,42 @@ async function chatHandler(req, res) {
     return;
   }
 
+  // Track active generation state
+  let isGenerating = true;
+
+  // Register cleanup handler
+  res.onCleanup(() => {
+    isGenerating = false;
+  });
+
   try {
     // Parse request body
     const messages = req.body?.messages;
     if (!Array.isArray(messages)) {
-      res.writeHead(400);
-      res.end('Invalid request: messages array required');
+      res.sendEvent('error', { message: 'Invalid request: messages array required' });
+      res.end();
       return;
     }
 
     // Stream handler that sends each chunk through SSE
     const onStream = (chunk) => {
-      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+      if (!isGenerating) return;
+      res.sendEvent('content', { content: chunk });
     };
 
     // Start chat with streaming
     const response = await chat(messages, undefined, onStream);
     
-    // Send final message and end stream
-    res.write(`data: ${JSON.stringify({ text: response, done: true })}\n\n`);
-    res.end();
+    // Send success event and end stream
+    if (isGenerating) {
+      res.sendEvent('success', {});
+      res.end();
+    }
   } catch (error) {
     console.error('Chat error:', error);
-    // Send error through SSE if possible
-    try {
-      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-    } catch (e) {
-      // If SSE write fails, send regular error response
-      res.writeHead(500);
-      res.end(JSON.stringify({ error: error.message }));
+    if (isGenerating) {
+      res.sendEvent('error', { message: error.message });
+      res.end();
     }
   }
 }
