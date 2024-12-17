@@ -10,22 +10,86 @@
  * - AI prompt generation with context from selected documents
  * - Dark mode compatible UI
  * - Auto-loads saved repository summaries
+ * - Streaming AI responses with real-time updates using SSE
  * 
  * Structure:
  * - State: Project data, UI state, selected files, and prompts
  * - View: Split pane layout with header, file selector, and editors
  * - Update: Event handlers for drag resize, content changes, file ops
+ * - Stream: SSE event handling with ReadableStream and proper buffering
  * 
  * Dependencies:
  * - AppRun for component architecture
  * - File System Access API for directory operations
  * - Project and Prompt services for data management
+ * - Server-Sent Events for streaming AI responses
  */
 
 /// <reference path="../types/file-system.d.ts" />
 import { app, Component } from 'apprun';
 import { Project, createProject, loadProject, saveProject } from './_data/project';
 import { promptService } from './_data/prompts';
+
+// SSE Event Parser
+interface ParsedEvent {
+  text?: string;
+  error?: string;
+  done?: boolean;
+}
+
+const parseSSEEvent = (line: string): ParsedEvent | null => {
+  if (!line.startsWith('data: ')) return null;
+  try {
+    return JSON.parse(line.slice(6));
+  } catch (e) {
+    console.error('Failed to parse SSE event:', e);
+    return null;
+  }
+};
+
+// Stream Response Processor
+const processStreamResponse = async (
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  onChunk: (content: string, done: boolean) => void
+) => {
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      // Decode chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines from buffer
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        const event = parseSSEEvent(line);
+        if (event) {
+          if (event.error) throw new Error(event.error);
+          if (event.text) onChunk(event.text, !!event.done);
+        }
+      }
+    }
+
+    // Process any remaining complete lines in buffer
+    if (buffer) {
+      const event = parseSSEEvent(buffer);
+      if (event) {
+        if (event.error) throw new Error(event.error);
+        if (event.text) onChunk(event.text, !!event.done);
+      }
+    }
+  } catch (error) {
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+};
 
 const beautifyLabel = (filename: string) => {
   return filename
@@ -201,13 +265,13 @@ export default class Home extends Component {
                 </button>
               </div>
               {/* Generate Button */}
-              {/* <button
+              <button
                 $onclick="generate"
                 disabled={state.generating}
                 class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {state.generating ? 'Generating...' : 'Generate'}
-              </button> */}
+              </button>
             </div>
           </div>
           <div class="flex-1 flex flex-col">
@@ -235,7 +299,6 @@ export default class Home extends Component {
   }
 
   update = {
-
     drag: (state, e: PointerEvent) => {
       const target = e.target as HTMLElement;
       target.setPointerCapture(e.pointerId);
@@ -365,7 +428,7 @@ export default class Home extends Component {
       try {
         const dirHandle = await window.showDirectoryPicker();
         const hasPermission = await verifyPermission(dirHandle);
-        
+
         if (!hasPermission) {
           alert('Permission denied to access the selected folder');
           return state;
@@ -398,7 +461,64 @@ export default class Home extends Component {
       }
     },
 
-    // generate: async (state) => { },
+    render: (_, state) => state,
+
+    generate: async (state) => {
+      if (!state.promptContent) return state;
+
+      // Set initial generating state
+      this.run('render', { ...state, generating: true, rightContent: '' });
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: 'You are a business analyst that write professional docment as per user\'s request' },
+              { role: 'user', content: state.promptContent }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error('Response body is null');
+        }
+
+        let content = '';
+        const reader = response.body.getReader();
+
+        await processStreamResponse(reader, (text, done) => {
+          content += text;
+          this.run('render', {
+            ...state,
+            rightContent: content,
+            generating: !done
+          });
+        });
+
+        // Save the generated content
+        if (state.project && state.activeTab) {
+          state.project.files[state.activeTab] = content;
+          saveProject(state.project);
+        }
+
+        return {
+          ...state,
+          rightContent: content,
+          generating: false
+        };
+
+      } catch (error) {
+        console.error('Generation error:', error);
+        alert('Failed to generate: ' + error.message);
+        return { ...state, generating: false };
+      }
+    },
 
     '@document-click': (state, e: MouseEvent) => {
       if (!state.showFileSelector) return;
