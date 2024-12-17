@@ -55,22 +55,18 @@ export default class extends Component<State> {
           <button
             $onclick={["getFeatures", this]}
             disabled={state.loading}
-            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} whitespace-nowrap`}
+            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} whitespace-nowrap flex items-center gap-2`}
           >
-            Get Features
+            {state.loading ? (
+              <>
+                <div class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                <span>Get Features...</span>
+              </>
+            ) : (
+              'Get Features'
+            )}
           </button>
         </div>
-
-        {state.loading &&
-          <div class="mt-4">
-            <div class="flex items-center gap-2">
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-              <span class="text-sm text-gray-600 dark:text-gray-300">
-                {state.features.items.length > 0 ? 'Analyzing features...' : 'Analyzing repository...'}
-              </span>
-            </div>
-          </div>
-        }
 
         {state.error &&
           <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm">
