@@ -1,43 +1,42 @@
 /**
- * Server-Sent Events (SSE) middleware
+ * Server-Sent Events (SSE) middleware for Express
+ * Handles SSE connections and provides helper methods for sending events
+ * Automatically handles JSON serialization and connection management
+ * Events are sent as JSON objects containing both event type and data
+ * Follows SSE protocol with 'data:' prefix for event data
  * 
- * Enhances response object with SSE capabilities:
- * - Automatically sets SSE headers
- * - Provides sendEvent method for proper event formatting
- * - Handles connection cleanup
- * 
- * Usage:
- * app.use('/api/events', sseMiddleware);
- * 
- * In route handler:
- * app.get('/api/events', (req, res) => {
- *   res.sendEvent('progress', { value: 50 });
- * });
+ * @module middleware/sse
  */
 
 export default function sseMiddleware(req, res, next) {
-  // Set SSE headers
+  // Set headers for SSE connection
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
-  // Keep connection alive
-  const keepAlive = setInterval(() => {
-    res.write(': keepalive\n\n');
-    if (res.flush) res.flush();
-  }, 30000);
+  // Send initial connection headers
+  res.write('\n');
+  if (res.flush) {
+    res.flush();
+  }
 
-  // Clean up on connection close
-  res.on('close', () => {
-    clearInterval(keepAlive);
-  });
-
-  // Add SSE helper method
-  res.sendEvent = (event, data) => {
-    const chunk = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    res.write(chunk);
-    if (res.flush) res.flush();
+  // Helper method to send events to the client
+  res.sendEvent = function(event, data) {
+    const eventObj = {
+      event: event,
+      data: data
+    };
+    res.write('data: ' + JSON.stringify(eventObj) + '\n\n');
+    if (res.flush) {
+      res.flush();
+    }
   };
+
+  // Handle client disconnect
+  req.on('close', () => {
+    res.end();
+  });
 
   next();
 }

@@ -1,50 +1,57 @@
-import { getCommitDiffs, getTagDiffs } from '../../services/git-service.js';
-import simpleGit from 'simple-git';
+/**
+ * API endpoint for retrieving basic git repository statistics via Server-Sent Events (SSE).
+ * Streams high-level repository information like commit counts and tags.
+ * Uses SSE middleware for event streaming.
+ */
 
-export default async (req, res) => {
+import simpleGit from 'simple-git';
+import sseMiddleware from '../../middleware/sse.js';
+
+// Handler function that uses the SSE capabilities added by middleware
+async function statsHandler(req, res) {
   const { path } = req.query;
   if (!path) {
     res.sendEvent('error', { message: 'Repository path is required' });
-    return res.end();
+    res.end();
+    return;
   }
 
   try {
-    // Initialize git with the provided path
     const git = simpleGit(path);
-
-    // Verify it's a git repository
     const isRepo = await git.checkIsRepo();
+
     if (!isRepo) {
       res.sendEvent('error', { message: 'Not a git repository' });
-      return res.end();
+      res.end();
+      return;
     }
 
-    // Track progress
-    let processedCommits = 0;
-    const onProgress = (progress) => {
-      processedCommits = progress;
-      res.sendEvent('commit-progress', { current: processedCommits });
-    };
+    // Get basic commit info
+    const log = await git.log();
+    const commits = log.all.map(commit => ({
+      hash: commit.hash,
+      date: commit.date
+    }));
+    res.sendEvent('commits', { commits });
 
-    try {
-      // Initial progress event
-      res.sendEvent('commit-progress', { current: 0 });
+    // Get tags
+    const tagList = await git.tags();
+    const tags = tagList.all.map(tag => ({ name: tag }));
+    res.sendEvent('tags', { tags });
 
-      // Get commit history with progress tracking
-      const commits = await getCommitDiffs(git, null, 1, onProgress);
-      res.sendEvent('commits', { commits });
-
-      // Get tag history
-      const tags = await getTagDiffs(git, null);
-      res.sendEvent('tags', { tags });
-
-      res.end();
-    } catch (error) {
-      res.sendEvent('error', { message: `Git analysis error: ${error.message}` });
-      res.end();
-    }
+    // Send success event instead of complete
+    res.sendEvent('success', null);
+    res.end();
   } catch (error) {
-    res.sendEvent('error', { message: error.message });
+    res.sendEvent('error', {
+      message: error.message || 'Unknown error'
+    });
     res.end();
   }
+}
+
+// Export middleware-wrapped handler
+export default (req, res) => {
+  // Apply SSE middleware then call handler
+  sseMiddleware(req, res, () => statsHandler(req, res));
 };
