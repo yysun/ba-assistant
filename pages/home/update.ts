@@ -16,29 +16,22 @@ import {
   State,
   DragEvent,
   InputEvent,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
+  ParsedEvent,
 } from './types';
 import { saveProject } from '../_services/project';
-import { processStreamResponse } from '../_services/sse';
+import { processStreamResponse, SSEEvent as ServiceSSEEvent } from '../_services/sse';
 
-// Event types from server
-interface ContentEvent {
-  content: string;
-}
-
-interface ErrorEvent {
-  message: string;
-}
-
-type ParsedEvent = {
-  event: 'content';
-  data: ContentEvent;
-} | {
-  event: 'success';
-  data: Record<string, never>;
-} | {
-  event: 'error';
-  data: ErrorEvent;
+// Type guard to convert service SSE event to our ParsedEvent
+const convertServiceEvent = (event: ServiceSSEEvent<any>): ParsedEvent => {
+  switch (event.event) {
+    case 'content':
+    case 'success':
+    case 'error':
+      return event as ParsedEvent;
+    default:
+      throw new Error(`Unknown event type: ${event.event}`);
+  }
 };
 
 // Utility Functions
@@ -276,10 +269,10 @@ const generate = async (state: State, component: Component<State>) => {
     }
 
     let updatedState = currentState;
-    await processStreamResponse<ParsedEvent>(
+    await processStreamResponse<any>(
       response,
       (event) => {
-        updatedState = processEvents(updatedState, event);
+        updatedState = processEvents(updatedState, convertServiceEvent(event));
         component.run('render', updatedState);
       }
     );

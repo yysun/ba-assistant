@@ -17,10 +17,10 @@ import {
   SSEEvent,
   ErrorMessage,
   API_ENDPOINTS,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
 } from './types';
 import { loadProject, saveProject } from '../_services/project';
-import { processStreamResponse } from '../_services/sse';
+import { processStreamResponse, SSEEvent as ServiceSSEEvent } from '../_services/sse';
 
 // Utility Functions
 const createErrorState = (state: State, error: ErrorMessage): State => ({
@@ -29,16 +29,24 @@ const createErrorState = (state: State, error: ErrorMessage): State => ({
   error
 });
 
-const processEvents = (currentState: State, event: SSEEvent): State => {
-  if (!event.event) {
-    return createErrorState(currentState, ERROR_MESSAGES.INVALID_EVENT_FORMAT);
-  }
-
+// Type guard to convert service SSE event to our typed SSE event
+const convertServiceEvent = (event: ServiceSSEEvent<any>): SSEEvent => {
   switch (event.event) {
     case 'commits':
-      if (!Array.isArray(event.data?.content)) {
-        return createErrorState(currentState, ERROR_MESSAGES.INVALID_COMMITS_DATA);
-      }
+    case 'tags':
+    case 'feature':
+    case 'summary':
+    case 'success':
+    case 'error':
+      return event as SSEEvent;
+    default:
+      throw new Error(`Unknown event type: ${event.event}`);
+  }
+};
+
+const processEvents = (currentState: State, event: SSEEvent): State => {
+  switch (event.event) {
+    case 'commits':
       return {
         ...currentState,
         stats: {
@@ -48,9 +56,6 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
       };
 
     case 'tags':
-      if (!Array.isArray(event.data?.content)) {
-        return createErrorState(currentState, ERROR_MESSAGES.INVALID_TAGS_DATA);
-      }
       return {
         ...currentState,
         stats: {
@@ -94,11 +99,8 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
     case 'error':
       return createErrorState(
         currentState,
-        event.data?.message || ERROR_MESSAGES.UNKNOWN_ERROR
+        event.data.message || ERROR_MESSAGES.UNKNOWN_ERROR
       );
-
-    default:
-      return currentState;
   }
 };
 
@@ -109,15 +111,15 @@ const updatePath = (state: State, e: Event): State => ({
   error: null
 });
 
-const handleKeyUp = (state: State, component: Component<State>, e: KeyboardEvent) => {
+const handleKeyUp = async (state: State, component: Component<State>, e: KeyboardEvent): Promise<void> => {
   if (e.key === 'Enter' && !state.loading) {
-    component.run('analyzeRepo');
+    await component.run('analyzeRepo');
   }
 };
 
-const render = (_: any, state: State) => state;
+const render = (_: any, state: State): State => state;
 
-const copyFeatures = async (state: State) => {
+const copyFeatures = async (state: State): Promise<State> => {
   const text = state.features.items.join('');
   try {
     await navigator.clipboard.writeText(text);
@@ -127,7 +129,7 @@ const copyFeatures = async (state: State) => {
   return state;
 };
 
-const copySummary = async (state: State) => {
+const copySummary = async (state: State): Promise<State> => {
   const text = state.features.summary.join('\n');
   try {
     await navigator.clipboard.writeText(text);
@@ -168,10 +170,10 @@ const getFeatures = async (state: State, component: Component<State>): Promise<S
     }
 
     let updatedState = currentState;
-    await processStreamResponse<SSEEvent>(
+    await processStreamResponse<any>(
       response,
       (event) => {
-        updatedState = processEvents(updatedState, event);
+        updatedState = processEvents(updatedState, convertServiceEvent(event));
         component.run('render', updatedState);
       }
     );
@@ -222,10 +224,10 @@ const analyzeRepo = async (state: State, component: Component<State>): Promise<S
     }
 
     let updatedState = currentState;
-    await processStreamResponse<SSEEvent>(
+    await processStreamResponse<any>(
       response,
       (event) => {
-        updatedState = processEvents(updatedState, event);
+        updatedState = processEvents(updatedState, convertServiceEvent(event));
         component.run('render', updatedState);
       }
     );

@@ -36,13 +36,43 @@ export interface State {
 }
 
 // Server-sent events
-export interface SSEEvent {
-  event: string;
-  data: {
-    content?: any;
-    message?: string;
-  };
+export type CommitsEvent = {
+  event: 'commits';
+  data: { content: Commit[] };
 }
+
+export type TagsEvent = {
+  event: 'tags';
+  data: { content: Tag[] };
+}
+
+export type FeatureEvent = {
+  event: 'feature';
+  data: { content: string };
+}
+
+export type SummaryEvent = {
+  event: 'summary';
+  data: { content: string };
+}
+
+export type SuccessEvent = {
+  event: 'success';
+  data: Record<string, never>;
+}
+
+export type ErrorEvent = {
+  event: 'error';
+  data: { message: string };
+}
+
+export type SSEEvent =
+  | CommitsEvent
+  | TagsEvent
+  | FeatureEvent
+  | SummaryEvent
+  | SuccessEvent
+  | ErrorEvent;
 
 // Constants
 export const API_ENDPOINTS = {

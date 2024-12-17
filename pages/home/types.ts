@@ -13,12 +13,25 @@
 import { Project } from '../_services/project';
 import { Prompt } from '../_services/prompts';
 
-// SSE Event Types
-export interface ParsedEvent {
-  text?: string;
-  error?: string;
-  done?: boolean;
+// Event types from server
+export interface ContentEvent {
+  content: string;
 }
+
+export interface ErrorEvent {
+  message: string;
+}
+
+export type ParsedEvent = {
+  event: 'content';
+  data: ContentEvent;
+} | {
+  event: 'success';
+  data: Record<string, never>;
+} | {
+  event: 'error';
+  data: ErrorEvent;
+};
 
 // State Interface
 export interface State {
