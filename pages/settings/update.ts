@@ -19,7 +19,7 @@ import {
   API_ENDPOINTS,
   ERROR_MESSAGES
 } from './types';
-import { loadProject, saveProject } from '../_data/project';
+import { loadProject, saveProject } from '../_services/project';
 
 // Utility Functions
 const createErrorState = (state: State, error: ErrorMessage): State => ({

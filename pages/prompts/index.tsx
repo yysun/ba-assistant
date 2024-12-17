@@ -16,7 +16,7 @@
  */
 
 import { app, Component } from 'apprun';
-import { Prompt, promptService } from '../_data/prompts';
+import { Prompt, promptService } from '../_services/prompts';
 
 type State = {
   prompts: Prompt[];

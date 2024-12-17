@@ -19,7 +19,7 @@ import {
   InputEvent,
   ERROR_MESSAGES
 } from './types';
-import { saveProject } from '../_data/project';
+import { saveProject } from '../_services/project';
 
 // Utility Functions
 const parseSSEEvent = (line: string): ParsedEvent | null => {

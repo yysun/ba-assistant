@@ -10,8 +10,8 @@
  * to maintain consistency across the application
  */
 
-import { Project } from '../_data/project';
-import { Prompt } from '../_data/prompts';
+import { Project } from '../_services/project';
+import { Prompt } from '../_services/prompts';
 
 // SSE Event Types
 export interface ParsedEvent {

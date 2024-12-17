@@ -21,8 +21,8 @@
 
 /// <reference path="../../types/file-system.d.ts" />
 import { app, Component } from 'apprun';
-import { Project, createProject, loadProject } from '../_data/project';
-import { promptService } from '../_data/prompts';
+import { Project, createProject, loadProject } from '../_services/project';
+import { promptService } from '../_services/prompts';
 import { State } from './types';
 import update from './update';
 
