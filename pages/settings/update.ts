@@ -7,11 +7,12 @@
  * - Repository analysis through SSE
  * - Feature extraction and processing
  * - Summary generation and saving to project.md
+ * - Project creation if none exists
  * - Clipboard operations
  * - Error handling and state management
  */
 
-import { Component } from 'apprun';
+import { app, Component } from 'apprun';
 import {
   State,
   SSEEvent,
@@ -19,7 +20,7 @@ import {
   API_ENDPOINTS,
   ERROR_MESSAGES,
 } from './types';
-import { loadProject, saveProject } from '../_services/project';
+import { loadProject, saveProject, createProject } from '../_services/project';
 import { processStreamResponse, SSEEvent as ServiceSSEEvent } from '../_services/sse';
 
 // Utility Functions
@@ -85,11 +86,16 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
     case 'success':
       // Save summary to project.md when processing is complete
       if (currentState.features.summary.length > 0) {
-        const project = loadProject();
-        if (project) {
-          project.files['project.md'] = currentState.features.summary.join('');
-          saveProject(project).catch(console.error);
+        let project = loadProject();
+        if (!project) {
+          // Create new project using the repo path as name
+          const pathParts = currentState.folderPath.split('/');
+          const repoName = pathParts[pathParts.length - 1];
+          project = createProject(repoName);
         }
+        project.files['project.md'] = currentState.features.summary.join('');
+        saveProject(project).catch(console.error);
+        app.run('@project', project);
       }
       return {
         ...currentState,

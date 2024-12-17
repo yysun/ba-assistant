@@ -113,10 +113,7 @@ const updateRight = (state: State, e: InputEvent) => {
     state.project.files[state.activeTab] = newContent;
     saveProject(state.project);
   }
-  return {
-    ...state,
-    rightContent: newContent
-  };
+  state.rightContent = newContent;
 };
 
 const setTab = (state: State, filename: string) => {
@@ -148,10 +145,7 @@ const toggleFileSelection = (state: State, file: string) => {
 
 const updatePrompt = (state: State, e: InputEvent) => {
   const newContent = e.target.value;
-  return {
-    ...state,
-    promptContent: newContent
-  };
+  state.promptContent = newContent;
 };
 
 const copyContent = async (state: State, e: MouseEvent) => {
@@ -315,5 +309,6 @@ export default {
   save,
   render,
   generate,
-  '@document-click': documentClick
+  '@document-click': documentClick,
+  '@project': (state: State, project: State['project']) => ({ ...state, project }),
 };
