@@ -55,7 +55,7 @@ export default class extends Component<State> {
           <button
             $onclick={["getFeatures", this]}
             disabled={state.loading}
-            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} whitespace-nowrap flex items-center gap-2`}
+            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'} whitespace-nowrap flex items-center gap-2`}
           >
             {state.loading ? (
               <>
@@ -75,9 +75,9 @@ export default class extends Component<State> {
         }
 
         {state.features.items.length > 0 &&
-          <div class="mt-4 flex-1 min-h-0">
-            <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md h-full">
-              <div class="grid grid-cols-2 gap-4 h-[calc(100%-2rem)]">
+          <div class="flex-1 flex min-h-0">
+            <div class="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-md min-h-0">
+              <div class="flex-1 grid grid-cols-2 gap-4">
                 <Card
                   title="Details"
                   content={state.features.items.join('')}

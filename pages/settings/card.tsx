@@ -3,6 +3,7 @@
  * 
  * A reusable card component for displaying content with a header and copy functionality.
  * Used in the settings page for showing repository features and summaries.
+ * The card uses a flex layout to ensure the textarea expands to fill available space.
  * 
  * Props:
  * - title: Header text displayed in the card
@@ -55,10 +56,10 @@ export default function Card({ title, content, copyTitle }: CardProps) {
           </div>
         </div>
       </div>
-      <div class="flex-1 text-xs">
+      <div class="flex-1 text-xs p-2 min-h-0">
         <textarea
           readonly
-          class="w-full h-[calc(100vh-20rem)] resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
+          class="w-full h-full resize-none bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3"
           value={content}
         />
       </div>
