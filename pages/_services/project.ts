@@ -29,8 +29,8 @@ const DEFAULT_FILES = [
   'project.md',
   'user-story-map.md',
   'customer-journey-map.md',
-  'page-navigations.md',
-  'page-user-stories.md',
+  // 'page-navigations.md',
+  // 'page-user-stories.md',
   'sprint-plan.md'
 ];
 

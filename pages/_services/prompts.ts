@@ -36,16 +36,16 @@ export class PromptService {
       name: 'Customer Journey Map',
       text: 'Help me create a customer journey map with these components:\n\nPersona:\n[Customer Type]\n\nStages:\n[Journey Stages]\n\nActions:\n[Customer Actions]\n\nThoughts & Feelings:\n[Customer Experience]\n\nPain Points:\n[Issues & Challenges]\n\nOpportunities:\n[Potential Improvements]'
     },
-    {
-      id: crypto.randomUUID(),
-      name: 'Page Navigations',
-      text: 'Help me design the page structure and navigation:\n\nSite Map:\n[Page Hierarchy]\n\nNavigation Flow:\n[User Navigation Paths]\n\nPage Components:\n[Key UI Elements]\n\nInteraction Points:\n[User Interactions]'
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'Page User Stories',
-      text: 'Help me define the page requirements and user stories:\n\nPage Purpose:\n[Main Objectives]\n\nUser Stories:\n[As a... I want... So that...]\n\nAcceptance Criteria:\n[Criteria List]\n\nTechnical Notes:\n[Implementation Details]'
-    },
+    // {
+    //   id: crypto.randomUUID(),
+    //   name: 'Page Navigations',
+    //   text: 'Help me design the page structure and navigation:\n\nSite Map:\n[Page Hierarchy]\n\nNavigation Flow:\n[User Navigation Paths]\n\nPage Components:\n[Key UI Elements]\n\nInteraction Points:\n[User Interactions]'
+    // },
+    // {
+    //   id: crypto.randomUUID(),
+    //   name: 'Page User Stories',
+    //   text: 'Help me define the page requirements and user stories:\n\nPage Purpose:\n[Main Objectives]\n\nUser Stories:\n[As a... I want... So that...]\n\nAcceptance Criteria:\n[Criteria List]\n\nTechnical Notes:\n[Implementation Details]'
+    // },
     {
       id: crypto.randomUUID(),
       name: 'Sprint Plan',
