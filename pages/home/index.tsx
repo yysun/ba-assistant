@@ -190,11 +190,10 @@ export default class Home extends Component<State> {
               <button
                 $onclick={["generate", this]}
                 disabled={state.generating}
-                class={`px-3 py-1 mb-2 text-white rounded-lg transition-colors ${
-                  state.generating 
-                    ? 'bg-gray-400 cursor-not-allowed' 
+                class={`px-3 py-1 mb-2 text-white rounded-lg transition-colors ${state.generating
+                    ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-500 hover:bg-blue-600'
-                }`}
+                  }`}
               >
                 {state.generating ? 'Generating...' : 'Generate'}
               </button>
@@ -213,8 +212,8 @@ export default class Home extends Component<State> {
             </div>
             {/* Document Area */}
             <div class="h-2/3">
-              <textarea
-                class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
+              <textarea ref={e => e && (e.scrollTop = e.scrollHeight)}
+               class="w-full h-full resize-none p-2 bg-gray-100 dark:bg-gray-800 outline-none dark:text-gray-100 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg"
                 value={state.rightContent}
                 $oninput={['updateRight']}
                 readOnly={state.generating}

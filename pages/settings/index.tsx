@@ -38,7 +38,7 @@ export default class extends Component<State> {
 
   view = (state: State) => {
     return <div class="h-screen flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border dark:border-gray-700">
-      <h1>Settings</h1>
+      <h1>Project Settings</h1>
       <div class="flex-1 flex flex-col min-h-0">
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2">
           Repository Location
