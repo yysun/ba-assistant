@@ -6,6 +6,7 @@
  * - Path updates and validation
  * - Repository analysis through SSE
  * - Feature extraction and processing
+ * - Summary generation and saving to project.md
  * - Clipboard operations
  * - Error handling and state management
  */
@@ -18,6 +19,7 @@ import {
   API_ENDPOINTS, 
   ERROR_MESSAGES 
 } from './types';
+import { loadProject, saveProject } from '../_data/project';
 
 // Utility Functions
 const createErrorState = (state: State, error: ErrorMessage): State => ({
@@ -146,6 +148,14 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
       };
 
     case 'success':
+      // Save summary to project.md when processing is complete
+      if (currentState.features.summary.length > 0) {
+        const project = loadProject();
+        if (project) {
+          project.files['project.md'] = currentState.features.summary.join('');
+          saveProject(project).catch(console.error);
+        }
+      }
       return {
         ...currentState,
         loading: false

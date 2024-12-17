@@ -9,6 +9,7 @@
  * - File system integration for saving/loading projects
  * - AI prompt generation with context from selected documents
  * - Dark mode compatible UI
+ * - Auto-loads saved repository summaries
  * 
  * Structure:
  * - State: Project data, UI state, selected files, and prompts
@@ -57,13 +58,16 @@ export default class Home extends Component {
     const tabs = Object.keys(project.files)
       .filter(name => name !== 'project.md');
 
+    // Ensure we load any existing content from project.md
+    const projectContent = project.files['project.md'] || '';
+
     return {
       dragging: false,
       leftWidth: 30,
       start: { x: 0, width: 30 },
       el: null as HTMLElement,
       container: null as HTMLElement,
-      leftContent: project.files['project.md'] || '',
+      leftContent: projectContent,
       rightContent: project.files[tabs[0]] || '',
       leftTitle: 'Project Ideas',
       rightTitle: beautifyLabel(tabs[0]),
