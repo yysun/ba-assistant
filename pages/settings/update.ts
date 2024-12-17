@@ -20,6 +20,7 @@ import {
   ERROR_MESSAGES
 } from './types';
 import { loadProject, saveProject } from '../_services/project';
+import { processStreamResponse } from '../_services/sse';
 
 // Utility Functions
 const createErrorState = (state: State, error: ErrorMessage): State => ({
@@ -27,77 +28,6 @@ const createErrorState = (state: State, error: ErrorMessage): State => ({
   loading: false,
   error
 });
-
-const processStreamResponse = async (
-  response: Response,
-  currentState: State,
-  onEvent: (state: State, event: SSEEvent) => State,
-  onUpdate: (state: State) => void
-): Promise<State> => {
-  if (!response.body) {
-    throw new Error(ERROR_MESSAGES.NO_CONTENT);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-
-      if (done) {
-        if (buffer.trim()) {
-          const events = parseSSEEvents(buffer);
-          for (const event of events) {
-            currentState = onEvent(currentState, event);
-          }
-        }
-        return { ...currentState, loading: false };
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const events = parseSSEEvents(buffer);
-
-      // Keep any incomplete event data in the buffer
-      const lastNewline = buffer.lastIndexOf('\n\n');
-      if (lastNewline !== -1) {
-        buffer = buffer.substring(lastNewline + 2);
-      }
-
-      for (const event of events) {
-        currentState = onEvent(currentState, event);
-        onUpdate(currentState);
-      }
-    }
-  } finally {
-    reader.cancel().catch(console.error);
-  }
-};
-
-const parseSSEEvents = (text: string): SSEEvent[] => {
-  const events: SSEEvent[] = [];
-  const eventStrings = text.split('\n\n').filter(str => str.trim());
-
-  for (const eventString of eventStrings) {
-    const dataMatch = eventString.match(/^data: (.+)$/m);
-    if (dataMatch) {
-      try {
-        const eventData = JSON.parse(dataMatch[1]);
-        if (eventData && typeof eventData === 'object' && 'event' in eventData) {
-          events.push({
-            event: eventData.event,
-            data: eventData.data || {}
-          });
-        }
-      } catch (error) {
-        console.error('Failed to parse SSE data:', error);
-      }
-    }
-  }
-
-  return events;
-};
 
 const processEvents = (currentState: State, event: SSEEvent): State => {
   if (!event.event) {
@@ -237,12 +167,16 @@ const getFeatures = async (state: State, component: Component<State>): Promise<S
       return createErrorState(state, errorMessage);
     }
 
-    return await processStreamResponse(
+    let updatedState = currentState;
+    await processStreamResponse<SSEEvent>(
       response,
-      currentState,
-      processEvents,
-      (state) => component.run('render', state)
+      (event) => {
+        updatedState = processEvents(updatedState, event);
+        component.run('render', updatedState);
+      }
     );
+
+    return updatedState;
   } catch (error) {
     const errorMessage = error instanceof Error
       ? error.message
@@ -287,12 +221,16 @@ const analyzeRepo = async (state: State, component: Component<State>): Promise<S
       return createErrorState(state, errorMessage);
     }
 
-    return await processStreamResponse(
+    let updatedState = currentState;
+    await processStreamResponse<SSEEvent>(
       response,
-      currentState,
-      processEvents,
-      (state) => component.run('render', state)
+      (event) => {
+        updatedState = processEvents(updatedState, event);
+        component.run('render', updatedState);
+      }
     );
+
+    return updatedState;
   } catch (error) {
     const errorMessage = error instanceof Error
       ? error.message

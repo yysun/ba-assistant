@@ -190,7 +190,7 @@ export default class Home extends Component<State> {
               </div>
               {/* Generate Button */}
               <button
-                $onclick="generate"
+                $onclick={["generate", this]}
                 disabled={state.generating}
                 class="px-3 py-1 mb-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >

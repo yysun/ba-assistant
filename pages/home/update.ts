@@ -20,61 +20,9 @@ import {
   ERROR_MESSAGES
 } from './types';
 import { saveProject } from '../_services/project';
+import { processStreamResponse } from '../_services/sse';
 
 // Utility Functions
-const parseSSEEvent = (line: string): ParsedEvent | null => {
-  if (!line.startsWith('data: ')) return null;
-  try {
-    return JSON.parse(line.slice(6));
-  } catch (e) {
-    console.error(ERROR_MESSAGES.PARSE_ERROR, e);
-    return null;
-  }
-};
-
-const processStreamResponse = async (
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  onChunk: (content: string, done: boolean) => void
-) => {
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      // Decode chunk and add to buffer
-      buffer += decoder.decode(value, { stream: true });
-
-      // Process complete lines from buffer
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        const event = parseSSEEvent(line);
-        if (event) {
-          if (event.error) throw new Error(event.error);
-          if (event.text) onChunk(event.text, !!event.done);
-        }
-      }
-    }
-
-    // Process any remaining complete lines in buffer
-    if (buffer) {
-      const event = parseSSEEvent(buffer);
-      if (event) {
-        if (event.error) throw new Error(event.error);
-        if (event.text) onChunk(event.text, !!event.done);
-      }
-    }
-  } catch (error) {
-    throw error;
-  } finally {
-    reader.releaseLock();
-  }
-};
-
 const beautifyLabel = (filename: string) => {
   return filename
     .replace('.md', '')
@@ -278,21 +226,21 @@ const generate = async (state: State, component: Component<State>) => {
       throw new Error(`${ERROR_MESSAGES.HTTP_ERROR} ${response.status}`);
     }
 
-    if (!response.body) {
-      throw new Error(ERROR_MESSAGES.NULL_RESPONSE);
-    }
-
     let content = '';
-    const reader = response.body.getReader();
-
-    await processStreamResponse(reader, (text, done) => {
-      content += text;
-      component.run('render', {
-        ...state,
-        rightContent: content,
-        generating: !done
-      });
-    });
+    await processStreamResponse<ParsedEvent>(
+      response,
+      (event) => {
+        if (event.error) throw new Error(event.error);
+        if (event.text) {
+          content += event.text;
+          component.run('render', {
+            ...state,
+            rightContent: content,
+            generating: !event.done
+          });
+        }
+      }
+    );
 
     // Save the generated content
     if (state.project && state.activeTab) {
