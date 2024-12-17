@@ -12,12 +12,12 @@
  */
 
 import { Component } from 'apprun';
-import { 
-  State, 
-  SSEEvent, 
-  ErrorMessage, 
-  API_ENDPOINTS, 
-  ERROR_MESSAGES 
+import {
+  State,
+  SSEEvent,
+  ErrorMessage,
+  API_ENDPOINTS,
+  ERROR_MESSAGES
 } from './types';
 import { loadProject, saveProject } from '../_data/project';
 
