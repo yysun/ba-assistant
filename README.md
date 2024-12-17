@@ -43,10 +43,21 @@ BA Assistant is a tool that helps business analysts build requirement documents 
 - Tab-based navigation
 - Document selection system
 - Copy-to-clipboard functionality
+- Dark/Light theme toggle
+- Collapsible sidebar
 
-### 5. Configuration
-- Configurable AI language model settings
-- Customizable generation parameters
+### 5. Settings
+- Repository analysis capabilities:
+  - Git repository statistics (commits, tags)
+  - Feature extraction and analysis
+  - Real-time updates via server-sent events
+  - Repository summary generation
+  - Commit history visualization
+  - Copy features and summaries to clipboard
+- Repository management:
+  - Set and validate repository paths
+  - Analyze repository structure
+  - Track repository metrics
 
 ## Technical Implementation
 

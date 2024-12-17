@@ -1,5 +1,19 @@
+/**
+ * Settings Page Component
+ * 
+ * Handles repository analysis and feature extraction through server-sent events (SSE).
+ * Features and summaries are streamed and displayed in real-time.
+ * Provides UI for:
+ * - Setting repository path
+ * - Analyzing repository stats (commits, tags)
+ * - Extracting and displaying repository features with live updates
+ * - Displaying incremental summary and feature updates in scrollable cards
+ * - Copying feature and summary text to clipboard
+ */
+
 import { app, Component } from 'apprun';
 
+// Types
 interface Commit {
   hash: string;
   date: string;
@@ -19,93 +33,204 @@ interface State {
   loading: boolean;
   error: string | null;
   stats: Stats;
+  features: {
+    items: string[];
+    summary: string[];
+  };
 }
 
 interface SSEEvent {
   event: string;
-  data: any;
-}
-
-const createErrorState = (state: State, error: string): State => {
-  return {
-    ...state,
-    loading: false,
-    error
+  data: {
+    content?: any;
+    message?: string;
   };
 }
 
-const processEvents = (currentState: State, eventText: string): State => {
-  console.log('Processing event text:', eventText);
+// Constants
+const DEFAULT_PATH = '/Users/esun/Documents/Projects/code-doc-mcp/';
+const API_ENDPOINTS = {
+  STATS: '/api/repo/stats',
+  FEATURES: '/api/repo/features'
+} as const;
 
-  let event: SSEEvent;
-  try {
-    event = JSON.parse(eventText);
-    console.log('Parsed event:', event);
-  } catch (error) {
-    console.error('Failed to parse event:', error);
-    return createErrorState(currentState, 'Invalid event data received');
+const ERROR_MESSAGES = {
+  EMPTY_PATH: 'Repository path cannot be empty',
+  NO_PATH: 'Please enter a repository path',
+  NO_CONTENT: 'Server response has no content',
+  GENERIC_STATS: 'Failed to analyze repository',
+  GENERIC_FEATURES: 'Failed to analyze features',
+  INVALID_EVENT_DATA: 'Invalid event data received',
+  INVALID_EVENT_FORMAT: 'Invalid event format - missing event',
+  INVALID_COMMITS_DATA: 'Invalid commits data received',
+  INVALID_TAGS_DATA: 'Invalid tags data received',
+  UNKNOWN_ERROR: 'Unknown error occurred'
+} as const;
+
+type ErrorMessage = string;
+
+// Utility Functions
+const createErrorState = (state: State, error: ErrorMessage): State => ({
+  ...state,
+  loading: false,
+  error
+});
+
+const processStreamResponse = async (
+  response: Response,
+  currentState: State,
+  onEvent: (state: State, event: SSEEvent) => State,
+  onUpdate: (state: State) => void
+): Promise<State> => {
+  if (!response.body) {
+    throw new Error(ERROR_MESSAGES.NO_CONTENT);
   }
 
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) {
+        if (buffer.trim()) {
+          const events = parseSSEEvents(buffer);
+          for (const event of events) {
+            currentState = onEvent(currentState, event);
+          }
+        }
+        return { ...currentState, loading: false };
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = parseSSEEvents(buffer);
+
+      // Keep any incomplete event data in the buffer
+      const lastNewline = buffer.lastIndexOf('\n\n');
+      if (lastNewline !== -1) {
+        buffer = buffer.substring(lastNewline + 2);
+      }
+
+      for (const event of events) {
+        currentState = onEvent(currentState, event);
+        onUpdate(currentState);
+      }
+    }
+  } finally {
+    reader.cancel().catch(console.error);
+  }
+};
+
+const parseSSEEvents = (text: string): SSEEvent[] => {
+  const events: SSEEvent[] = [];
+  const eventStrings = text.split('\n\n').filter(str => str.trim());
+
+  for (const eventString of eventStrings) {
+    const dataMatch = eventString.match(/^data: (.+)$/m);
+    if (dataMatch) {
+      try {
+        const eventData = JSON.parse(dataMatch[1]);
+        if (eventData && typeof eventData === 'object' && 'event' in eventData) {
+          events.push({
+            event: eventData.event,
+            data: eventData.data || {}
+          });
+        }
+      } catch (error) {
+        console.error('Failed to parse SSE data:', error);
+      }
+    }
+  }
+
+  return events;
+};
+
+const processEvents = (currentState: State, event: SSEEvent): State => {
   if (!event.event) {
-    return createErrorState(currentState, 'Invalid event format - missing event');
+    return createErrorState(currentState, ERROR_MESSAGES.INVALID_EVENT_FORMAT);
   }
 
   switch (event.event) {
     case 'commits':
-      if (!Array.isArray(event.data?.commits)) {
-        console.error('Invalid commits data:', event.data);
-        return createErrorState(currentState, 'Invalid commits data received');
+      if (!Array.isArray(event.data?.content)) {
+        return createErrorState(currentState, ERROR_MESSAGES.INVALID_COMMITS_DATA);
       }
-      console.log('Updating commits:', event.data.commits.length);
       return {
         ...currentState,
         stats: {
           ...currentState.stats,
-          commits: event.data.commits
+          commits: event.data.content
         }
       };
+
     case 'tags':
-      if (!Array.isArray(event.data?.tags)) {
-        console.error('Invalid tags data:', event.data);
-        return createErrorState(currentState, 'Invalid tags data received');
+      if (!Array.isArray(event.data?.content)) {
+        return createErrorState(currentState, ERROR_MESSAGES.INVALID_TAGS_DATA);
       }
-      console.log('Updating tags:', event.data.tags.length);
       return {
         ...currentState,
         stats: {
           ...currentState.stats,
-          tags: event.data.tags
+          tags: event.data.content
         }
       };
+
+    case 'feature':
+      return {
+        ...currentState,
+        features: {
+          ...currentState.features,
+          items: [...currentState.features.items, event.data.content]
+        }
+      };
+
+    case 'summary':
+      return {
+        ...currentState,
+        features: {
+          ...currentState.features,
+          summary: [...currentState.features.summary, event.data.content]
+        }
+      };
+
     case 'success':
-      console.log('Success event received');
       return {
         ...currentState,
         loading: false
       };
+
     case 'error':
-      console.error('Error event received:', event.data?.message);
-      return createErrorState(currentState, event.data?.message || 'Unknown error occurred');
+      return createErrorState(
+        currentState,
+        event.data?.message || ERROR_MESSAGES.UNKNOWN_ERROR
+      );
+
     default:
       return currentState;
   }
-}
+};
 
 export default class extends Component<State> {
   state = {
-    folderPath: '',
+    folderPath: DEFAULT_PATH,
     loading: false,
     error: null,
     stats: {
       commits: [],
       tags: []
+    },
+    features: {
+      items: [],
+      summary: []
     }
   }
 
   view = (state: State) => {
-    return <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border dark:border-gray-700">
+    return <div class="h-screen flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border dark:border-gray-700">
       <h1>Settings</h1>
-      <div>
+      <div class="flex-1 flex flex-col min-h-0">
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2">
           Repository Location
         </label>
@@ -125,6 +250,13 @@ export default class extends Component<State> {
           >
             Analyze Repo
           </button>
+          <button
+            $onclick="getFeatures"
+            disabled={state.loading}
+            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} whitespace-nowrap`}
+          >
+            Get Features
+          </button>
         </div>
 
         {state.loading &&
@@ -132,7 +264,7 @@ export default class extends Component<State> {
             <div class="flex items-center gap-2">
               <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
               <span class="text-sm text-gray-600 dark:text-gray-300">
-                Analyzing repository...
+                {state.features.items.length > 0 ? 'Analyzing features...' : 'Analyzing repository...'}
               </span>
             </div>
           </div>
@@ -145,7 +277,7 @@ export default class extends Component<State> {
         }
 
         {state.stats.commits.length > 0 &&
-          <div class="mt-4 space-y-4">
+          <div class="mt-4 space-y-4 flex-1 min-h-0">
             <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md">
               <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Repository Stats</h3>
               <dl class="grid grid-cols-2 gap-4">
@@ -173,19 +305,62 @@ export default class extends Component<State> {
             </div>
           </div>
         }
+
+        {state.features.items.length > 0 &&
+          <div class="mt-4 flex-1 min-h-0">
+            <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md h-full">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Features</h3>
+              <div class="grid grid-cols-2 gap-4 h-[calc(100%-2rem)]">
+                {state.features.summary.length > 0 &&
+                  <div class="p-4 bg-white dark:bg-gray-800 rounded-md overflow-y-auto">
+                    <div class="flex justify-between items-center mb-2 sticky top-0 bg-white dark:bg-gray-800">
+                      <h4 class="text-xs font-medium text-gray-700 dark:text-gray-300">Summary</h4>
+                      <button
+                        $onclick="copySummary"
+                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        title="Copy summary to clipboard"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                        </svg>
+                      </button>
+                    </div>
+                    <pre class="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                      {state.features.summary.join('')}
+                    </pre>
+                  </div>
+                }
+                <div class="p-4 bg-white dark:bg-gray-800 rounded-md overflow-y-auto">
+                  <div class="flex justify-between items-center mb-2 sticky top-0 bg-white dark:bg-gray-800">
+                    <h4 class="text-xs font-medium text-gray-700 dark:text-gray-300">Details</h4>
+                    <button
+                      $onclick="copyFeatures"
+                      class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      title="Copy features to clipboard"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                      </svg>
+                    </button>
+                  </div>
+                  <pre class="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                    {state.features.items.join('')}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   }
 
   update = {
-    updatePath: (state: State, e: Event): State => {
-      const input = e.target as HTMLInputElement;
-      return {
-        ...state,
-        folderPath: input.value,
-        error: null // Clear any previous errors when path changes
-      };
-    },
+    updatePath: (state: State, e: Event): State => ({
+      ...state,
+      folderPath: (e.target as HTMLInputElement).value,
+      error: null
+    }),
 
     handleKeyUp: (state: State, e: KeyboardEvent) => {
       if (e.key === 'Enter' && !state.loading) {
@@ -193,107 +368,122 @@ export default class extends Component<State> {
       }
     },
 
-    analyzeRepo: async (state: State): Promise<State> => {
-      if (state.loading) {
-        return state; // Prevent multiple simultaneous requests
-      }
+    render: (_, state: State) => state,
 
-      console.log('Starting repository analysis...');
+    copyFeatures: async (state: State) => {
+      const text = state.features.items.join('');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        console.error('Failed to copy text:', error);
+      }
+      return state;
+    },
+
+    copySummary: async (state: State) => {
+      const text = state.features.summary.join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        console.error('Failed to copy text:', error);
+      }
+      return state;
+    },
+
+    getFeatures: async (state: State): Promise<State> => {
+      if (state.loading) return state;
 
       if (!state.folderPath) {
-        console.log('No repository path provided');
-        return createErrorState(state, 'Please enter a repository path');
+        return createErrorState(state, ERROR_MESSAGES.NO_PATH);
       }
 
-      if (!state.folderPath.trim()) {
-        console.log('Empty repository path provided');
-        return createErrorState(state, 'Repository path cannot be empty');
-      }
-
-      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
-      let currentState = {
+      const currentState = {
         ...state,
         loading: true,
         error: null,
-        stats: { commits: [], tags: [] } // Reset stats for new analysis
+        features: { items: [], summary: [] }
       };
 
       try {
-        console.log('Fetching repository stats...');
-        const response = await fetch(`/api/repo/stats?path=${encodeURIComponent(state.folderPath)}`);
+        const response = await fetch(
+          `${API_ENDPOINTS.FEATURES}?path=${encodeURIComponent(state.folderPath)}`
+        );
 
         if (!response.ok) {
-          console.error('Server response not OK:', response.status, response.statusText);
-          let errorMessage = 'Failed to analyze repository';
+          let errorMessage: ErrorMessage = ERROR_MESSAGES.GENERIC_FEATURES;
           try {
             const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
+            errorMessage = errorData.message || `${ERROR_MESSAGES.GENERIC_FEATURES}: Server error ${response.status}`;
           } catch {
-            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            errorMessage = `${ERROR_MESSAGES.GENERIC_FEATURES}: Server error ${response.status} ${response.statusText}`;
           }
           return createErrorState(state, errorMessage);
         }
 
-        if (!response.body) {
-          console.error('No response body received');
-          return createErrorState(state, 'Server response has no content');
-        }
-
-        console.log('Starting stream reading...');
-        reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) {
-            console.log('Stream reading complete');
-            if (buffer.trim()) {
-              console.log('Processing remaining buffer:', buffer);
-              currentState = processEvents(currentState, buffer);
-            }
-            return {
-              ...currentState,
-              loading: false
-            };
-          }
-
-          const chunk = decoder.decode(value, { stream: true });
-          console.log('Received chunk:', chunk);
-
-          buffer += chunk;
-          const events = buffer.split('\n\n');
-          buffer = events.pop() || '';
-
-          console.log('Processing events:', events.length);
-          for (const event of events) {
-            const dataLine = event.split('\n').find(line => line.startsWith('data: '));
-            if (dataLine) {
-              const eventData = dataLine.replace('data: ', '');
-              if (eventData.trim()) {
-                currentState = processEvents(currentState, eventData);
-              }
-            }
-          }
-        }
+        return await processStreamResponse(
+          response,
+          currentState,
+          processEvents,
+          (state) => this.run('render', state)
+        );
       } catch (error) {
-        console.error('Stream processing error:', error);
         const errorMessage = error instanceof Error
           ? error.message
           : 'An unexpected error occurred';
-        return createErrorState(state, `Failed to analyze repository: ${errorMessage}`);
-      } finally {
-        console.log('Cleaning up...');
-        if (reader) {
+        return createErrorState(
+          state,
+          `${ERROR_MESSAGES.GENERIC_FEATURES}: ${errorMessage}`
+        );
+      }
+    },
+
+    analyzeRepo: async (state: State): Promise<State> => {
+      if (state.loading) return state;
+
+      if (!state.folderPath?.trim()) {
+        return createErrorState(
+          state,
+          !state.folderPath ? ERROR_MESSAGES.NO_PATH : ERROR_MESSAGES.EMPTY_PATH
+        );
+      }
+
+      const currentState = {
+        ...state,
+        loading: true,
+        error: null,
+        stats: { commits: [], tags: [] }
+      };
+
+      try {
+        const response = await fetch(
+          `${API_ENDPOINTS.STATS}?path=${encodeURIComponent(state.folderPath)}`
+        );
+
+        if (!response.ok) {
+          let errorMessage: ErrorMessage = ERROR_MESSAGES.GENERIC_STATS;
           try {
-            await reader.cancel();
-            console.log('Reader cancelled successfully');
-          } catch (error) {
-            console.error('Error cancelling reader:', error);
+            const errorData = await response.json();
+            errorMessage = errorData.message || `${ERROR_MESSAGES.GENERIC_STATS}: Server error ${response.status}`;
+          } catch {
+            errorMessage = `${ERROR_MESSAGES.GENERIC_STATS}: Server error ${response.status} ${response.statusText}`;
           }
+          return createErrorState(state, errorMessage);
         }
-        console.log('Analysis complete');
+
+        return await processStreamResponse(
+          response,
+          currentState,
+          processEvents,
+          (state) => this.run('render', state)
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred';
+        return createErrorState(
+          state,
+          `${ERROR_MESSAGES.GENERIC_STATS}: ${errorMessage}`
+        );
       }
     }
   }

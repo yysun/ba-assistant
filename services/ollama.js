@@ -6,11 +6,12 @@
  * - Implements retry logic with exponential backoff
  * - Handles partial JSON chunks in stream with buffer
  * - Supports both chat and completion endpoints
- * - Uses ANSI codes for console output formatting
+ * - Supports custom stream handlers for client-side streaming
+ * - Tracks active connections for proper cleanup
  * 
  * Data flow:
  * 1. Request -> Streaming response -> Buffer -> JSON chunks
- * 2. JSON chunks -> Console output + Text accumulation
+ * 2. JSON chunks -> Text accumulation + Stream handler
  * 3. Final text -> Response cleanup -> Return
  * 
  * Key params:
@@ -32,17 +33,18 @@ export const CONFIG = {
   streaming: true
 };
 
-// ANSI escape codes
-const DIM = '\x1b[2m';
-const RESET = '\x1b[0m';
-
 class OllamaClient {
   constructor(config = CONFIG) {
     this.config = config;
+    this.activeReaders = new Set();
+    this.activeConnections = new Set();
   }
 
   // Core API method
-  async query(prompt, maxTokens = this.config.maxTokens) {
+  async query(prompt, maxTokens = this.config.maxTokens, onStream = null) {
+    const controller = new AbortController();
+    this.activeConnections.add(controller);
+
     return this._retryWithDelay(async () => {
       try {
         const response = await fetch(this.config.endpoint + 'api/generate', {
@@ -55,22 +57,32 @@ class OllamaClient {
             temperature: this.config.temperature,
             max_tokens: maxTokens,
             num_ctx: 131072
-          })
+          }),
+          signal: controller.signal
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await this._processStream(response, false);
+        return await this._processStream(response, false, onStream);
       } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log('Request aborted');
+          return '';
+        }
         console.error('Error querying Ollama:', error);
         throw error;
+      } finally {
+        this.activeConnections.delete(controller);
       }
     });
   }
 
-  async chat(messages, maxTokens = this.config.maxTokens) {
+  async chat(messages, maxTokens = this.config.maxTokens, onStream = null) {
+    const controller = new AbortController();
+    this.activeConnections.add(controller);
+
     return this._retryWithDelay(async () => {
       try {
         const response = await fetch(this.config.endpoint + 'api/chat', {
@@ -82,29 +94,33 @@ class OllamaClient {
             stream: this.config.streaming,
             temperature: this.config.temperature,
             max_tokens: maxTokens
-          })
+          }),
+          signal: controller.signal
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await this._processStream(response, true);
+        return await this._processStream(response, true, onStream);
       } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log('Request aborted');
+          return '';
+        }
         console.error('Error in chat with Ollama:', error);
         throw error;
+      } finally {
+        this.activeConnections.delete(controller);
       }
     });
   }
 
   // Stream handling
-  async _processStream(response, isChat = false) {
+  async _processStream(response, isChat = false, onStream = null) {
     const reader = response.body.getReader();
+    this.activeReaders.add(reader);
     let fullText = '';
-
-    if (this.config.streaming) {
-      process.stdout.write('\n');
-    }
 
     try {
       let decoder = new TextDecoder();
@@ -128,8 +144,8 @@ class OllamaClient {
           try {
             const parsed = JSON.parse(line);
             fullText = isChat ? 
-              this._processChatStream(parsed, fullText) : 
-              this._processQueryStream(parsed, fullText);
+              this._processChatStream(parsed, fullText, onStream) : 
+              this._processQueryStream(parsed, fullText, onStream);
           } catch (e) {
             // Silently ignore parsing errors
           }
@@ -141,43 +157,61 @@ class OllamaClient {
         try {
           const parsed = JSON.parse(buffer);
           fullText = isChat ? 
-            this._processChatStream(parsed, fullText) : 
-            this._processQueryStream(parsed, fullText);
+            this._processChatStream(parsed, fullText, onStream) : 
+            this._processQueryStream(parsed, fullText, onStream);
         } catch (e) {
           // Silently ignore parsing errors
         }
       }
     } finally {
+      this.activeReaders.delete(reader);
       reader.releaseLock();
-    }
-
-    if (this.config.streaming) {
-      process.stdout.write('\n');
     }
 
     return fullText;
   }
 
-  _processChatStream(parsed, currentText) {
+  _processChatStream(parsed, currentText, onStream) {
     const content = parsed.message?.content || '';
     if (content && !parsed.done) {
-      if (this.config.streaming) {
-        process.stdout.write(DIM + content + RESET);
+      if (onStream) {
+        onStream(content);
       }
-      return currentText + content; // Now accumulating chat responses
+      return currentText + content;
     }
     return currentText;
   }
 
-  _processQueryStream(parsed, currentText) {
+  _processQueryStream(parsed, currentText, onStream) {
     const content = parsed.response || '';
     if (content) {
-      if (this.config.streaming) {
-        process.stdout.write(DIM + content + RESET);
+      if (onStream) {
+        onStream(content);
       }
-      return currentText + content; // Query concatenates responses
+      return currentText + content;
     }
     return currentText;
+  }
+
+  // Stop all active processes and connections
+  async stopOllamaProcess() {
+    // Abort all active connections
+    const controllers = Array.from(this.activeConnections);
+    for (const controller of controllers) {
+      controller.abort();
+      this.activeConnections.delete(controller);
+    }
+
+    // Cancel all active streams
+    const readers = Array.from(this.activeReaders);
+    for (const reader of readers) {
+      try {
+        await reader.cancel();
+      } catch (error) {
+        console.error('Error canceling reader:', error);
+      }
+      this.activeReaders.delete(reader);
+    }
   }
 
   // Utility methods
@@ -199,6 +233,7 @@ class OllamaClient {
       try {
         return await fn();
       } catch (error) {
+        if (error.name === 'AbortError') throw error;
         if (i === retries - 1) throw error;
         await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * (i + 1)));
       }
@@ -219,7 +254,8 @@ class OllamaClient {
 const ollamaClient = new OllamaClient();
 
 // Export public methods
-export const query = (prompt, maxTokens) => ollamaClient.query(prompt, maxTokens);
+export const query = (prompt, maxTokens, onStream) => ollamaClient.query(prompt, maxTokens, onStream);
 export const setLanguage = (language) => ollamaClient.setLanguage(language);
 export const toggleStreaming = (enabled) => ollamaClient.toggleStreaming(enabled);
-export const chat = (messages, maxTokens) => ollamaClient.chat(messages, maxTokens);
+export const chat = (messages, maxTokens, onStream) => ollamaClient.chat(messages, maxTokens, onStream);
+export const stopOllamaProcess = () => ollamaClient.stopOllamaProcess();

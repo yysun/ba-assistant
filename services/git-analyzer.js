@@ -7,6 +7,7 @@
  * - Processes diffs in parallel using Promise.all for better performance
  * - Implements hierarchical feature summarization with context management
  * - Supports document updating with new features while preserving structure
+ * - Streams LLM responses back to client for real-time updates
  * 
  * Data flow:
  * 1. Raw git diff -> File-based chunks -> Size-based groups
@@ -78,7 +79,7 @@ function* splitDiffIntoFileChunks(diff) {
   }
 }
 
-export async function analyzeGitDiff(diff) {
+export async function analyzeGitDiff(diff, onStream = null) {
   try {
     const processedDiff = diff.trim();
     const chunks = [...splitDiffIntoFileChunks(processedDiff)];
@@ -102,7 +103,7 @@ Please describe changes as a list of features following these rules:
   - [Feature description]
     - [Changes made and parameters details]
 `;
-      const result = await query(prompt, 2048);
+      const result = await query(prompt, 2048, onStream);
       features.push(result.trim());
     }
 
@@ -113,7 +114,7 @@ Please describe changes as a list of features following these rules:
   }
 }
 
-export async function summarizeFeatures(features) {
+export async function summarizeFeatures(features, onStream = null) {
   try {
     const validFeatures = features.filter(f => f && f.trim());
 
@@ -141,14 +142,13 @@ export async function summarizeFeatures(features) {
     let globalSummary = "";
 
     for (let i = 0; i < chunks.length; i++) {
-
       const promptContent = i === 0
         ? `Here is the first part of the document:\n\n${chunks[i].join('\n')}\n\nPlease summarize this portion.`
         : `Here is another part of the document:\n\n${chunks[i].join('\n')}\n\nIncorporate this new information into the existing summary:\n\n${globalSummary}`;
 
       messages.push({ role: "user", content: promptContent });
 
-      const response = await chat(messages);
+      const response = await chat(messages, undefined, onStream);
       globalSummary = response;
 
       // Clean up messages to save context space - keep only system message
@@ -186,7 +186,6 @@ export async function updateDoc(text, features) {
 7. Respond in ${CONFIG.language}.
 8. Do not offer additional help, suggestions, explanations, or clarifications.
 `
-
     }];
 
     let updatedDoc = text;

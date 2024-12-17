@@ -32,15 +32,15 @@ async function statsHandler(req, res) {
       hash: commit.hash,
       date: commit.date
     }));
-    res.sendEvent('commits', { commits });
+    res.sendEvent('commits', { content: commits });
 
     // Get tags
     const tagList = await git.tags();
     const tags = tagList.all.map(tag => ({ name: tag }));
-    res.sendEvent('tags', { tags });
+    res.sendEvent('tags', { content: tags });
 
     // Send success event instead of complete
-    res.sendEvent('success', null);
+    res.sendEvent('success', {});
     res.end();
   } catch (error) {
     res.sendEvent('error', {

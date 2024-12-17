@@ -4,6 +4,7 @@
  * Automatically handles JSON serialization and connection management
  * Events are sent as JSON objects containing both event type and data
  * Follows SSE protocol with 'data:' prefix for event data
+ * Supports cleanup callbacks for resource management on disconnect
  * 
  * @module middleware/sse
  */
@@ -33,8 +34,25 @@ export default function sseMiddleware(req, res, next) {
     }
   };
 
+  // Store cleanup callbacks
+  const cleanupCallbacks = new Set();
+
+  // Add method to register cleanup callbacks
+  res.onCleanup = function(callback) {
+    cleanupCallbacks.add(callback);
+  };
+
   // Handle client disconnect
   req.on('close', () => {
+    // Execute all cleanup callbacks
+    for (const callback of cleanupCallbacks) {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in cleanup callback:', error);
+      }
+    }
+    cleanupCallbacks.clear();
     res.end();
   });
 
