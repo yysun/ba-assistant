@@ -8,29 +8,39 @@
  * - Supports both chat and completion endpoints
  * - Supports custom stream handlers for client-side streaming
  * - Tracks active connections for proper cleanup
+ * - Loads configuration from environment variables (.env file)
  * 
  * Data flow:
  * 1. Request -> Streaming response -> Buffer -> JSON chunks
  * 2. JSON chunks -> Text accumulation + Stream handler
  * 3. Final text -> Response cleanup -> Return
  * 
- * Key params:
- * - model: llama3.2:3b
- * - max_tokens: 4096
- * - num_ctx: 131072 (context window)
- * - temperature: 0.3
+ * Environment variables:
+ * - OLLAMA_ENDPOINT: API endpoint URL (default: http://localhost:11434/)
+ * - OLLAMA_MODEL: Model name (default: llama3.2:3b)
+ * - OLLAMA_TEMPERATURE: Generation temperature (default: 0.3)
+ * - OLLAMA_MAX_TOKENS: Maximum tokens (default: 4096)
+ * - OLLAMA_RETRY_ATTEMPTS: Number of retry attempts (default: 3)
+ * - OLLAMA_RETRY_DELAY: Delay between retries in ms (default: 1000)
+ * - OLLAMA_LANGUAGE: Response language (default: English)
+ * - OLLAMA_STREAMING: Enable streaming (default: true)
  */
 
-// Configuration
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
+
+// Configuration with environment variable fallbacks
 export const CONFIG = {
-  endpoint: 'http://localhost:11434/',
-  model: 'llama3.2:3b',
-  temperature: 0.3,
-  retryAttempts: 3,
-  retryDelay: 1000,
-  maxTokens: 4096,
-  language: 'English',
-  streaming: true
+  endpoint: process.env.OLLAMA_ENDPOINT || 'http://localhost:11434/',
+  model: process.env.OLLAMA_MODEL || 'llama3.2:3b',
+  temperature: parseFloat(process.env.OLLAMA_TEMPERATURE || '0.3'),
+  retryAttempts: parseInt(process.env.OLLAMA_RETRY_ATTEMPTS || '3', 10),
+  retryDelay: parseInt(process.env.OLLAMA_RETRY_DELAY || '1000', 10),
+  maxTokens: parseInt(process.env.OLLAMA_MAX_TOKENS || '4096', 10),
+  language: process.env.OLLAMA_LANGUAGE || 'English',
+  streaming: process.env.OLLAMA_STREAMING !== 'false'
 };
 
 class OllamaClient {

@@ -55,7 +55,7 @@ export default class extends Component<State> {
           <button
             $onclick={["getFeatures", this]}
             disabled={state.loading}
-            class={`px-4 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white ${state.loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'} whitespace-nowrap flex items-center gap-2`}
+            class={`px-4 py-2 text-xs text-white rounded-lg transition-colors ${state.loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'} whitespace-nowrap flex items-center gap-2`}
           >
             {state.loading ? (
               <>
