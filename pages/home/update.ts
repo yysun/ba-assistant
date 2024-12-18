@@ -310,5 +310,7 @@ export default {
   render,
   generate,
   '@document-click': documentClick,
-  '@project': (state: State, project: State['project']) => ({ ...state, project }),
+  '@project': (state: State, project: State['project']) => {
+    state.leftContent = project?.files['project.md'] || '';
+  }
 };
