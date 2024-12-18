@@ -9,6 +9,7 @@
  * - AI prompt generation and streaming
  * - Clipboard operations
  * - Project saving and loading
+ * - Error handling and display
  */
 
 import { Component } from 'apprun';
@@ -20,15 +21,19 @@ import {
   ParsedEvent,
 } from './types';
 import { saveProject } from '../_services/project';
-import { processStreamResponse, SSEEvent as ServiceSSEEvent } from '../_services/sse';
+import { processStreamResponse, SSEEvent as ServiceSSEEvent, ErrorEventData } from '../_services/sse';
 
 // Type guard to convert service SSE event to our ParsedEvent
-const convertServiceEvent = (event: ServiceSSEEvent<any>): ParsedEvent => {
+const convertServiceEvent = (event: ServiceSSEEvent<any | ErrorEventData>): ParsedEvent => {
   switch (event.event) {
     case 'content':
     case 'success':
-    case 'error':
       return event as ParsedEvent;
+    case 'error':
+      return {
+        event: 'error',
+        data: { message: (event.data as ErrorEventData).message }
+      };
     default:
       throw new Error(`Unknown event type: ${event.event}`);
   }
@@ -45,9 +50,7 @@ const beautifyLabel = (filename: string) => {
 
 const verifyPermission = async (dirHandle: FileSystemDirectoryHandle) => {
   const options: FileSystemPermissionMode = 'readwrite';
-  // Check if we already have permission, if so, return true
   if ((await dirHandle.queryPermission({ mode: options })) === 'granted') return true;
-  // Request permission if we don't have it
   if ((await dirHandle.requestPermission({ mode: options })) === 'granted') return true;
   return false;
 };
@@ -177,12 +180,13 @@ const selectFolderAndSave = async (state: State) => {
     const hasPermission = await verifyPermission(dirHandle);
 
     if (!hasPermission) {
-      alert(ERROR_MESSAGES.PERMISSION_DENIED);
-      return state;
+      return {
+        ...state,
+        error: ERROR_MESSAGES.PERMISSION_DENIED
+      };
     }
 
     if (state.project) {
-      // Save current content before saving to files
       state.project.files['project.md'] = state.leftContent;
       state.project.files[state.activeTab] = state.rightContent;
       state.project.folder = dirHandle.name;
@@ -190,22 +194,27 @@ const selectFolderAndSave = async (state: State) => {
     }
   } catch (err) {
     if (err.name === 'AbortError') {
-      // User cancelled the folder picker
       return state;
     }
     console.error(ERROR_MESSAGES.SAVE_ERROR, err);
-    alert(ERROR_MESSAGES.SAVE_ERROR + ' ' + err.message);
+    return {
+      ...state,
+      error: `${ERROR_MESSAGES.SAVE_ERROR} ${err.message}`
+    };
   }
-  return state;
+  return {
+    ...state,
+    error: null
+  };
 };
 
 const save = (state: State) => {
   if (state.project) {
-    // Save both left and right content before saving project
     state.project.files['project.md'] = state.leftContent;
     state.project.files[state.activeTab] = state.rightContent;
     saveProject(state.project);
   }
+  return state;
 };
 
 const render = (_: any, state: State) => state;
@@ -216,7 +225,8 @@ const processEvents = (state: State, event: ParsedEvent): State => {
       return {
         ...state,
         rightContent: state.rightContent + event.data.content,
-        generating: true
+        generating: true,
+        error: null // Clear any previous errors
       };
     case 'success':
       // Save the generated content
@@ -226,13 +236,14 @@ const processEvents = (state: State, event: ParsedEvent): State => {
       }
       return {
         ...state,
-        generating: false
+        generating: false,
+        error: null // Clear any previous errors
       };
     case 'error':
-      alert(event.data.message);
       return {
         ...state,
-        generating: false
+        generating: false,
+        error: event.data.message // Store error message in state
       };
     default:
       return state;
@@ -243,7 +254,12 @@ const generate = async (state: State, component: Component<State>) => {
   if (!state.promptContent) return state;
 
   // Set initial generating state
-  let currentState = { ...state, generating: true, rightContent: '' };
+  let currentState = { 
+    ...state, 
+    generating: true, 
+    rightContent: '',
+    error: null // Clear any previous errors
+  };
   component.run('render', currentState);
 
   try {
@@ -275,8 +291,11 @@ const generate = async (state: State, component: Component<State>) => {
 
   } catch (error) {
     console.error('Generation error:', error);
-    alert(`${ERROR_MESSAGES.GENERATION_ERROR} ${error.message}`);
-    return { ...currentState, generating: false };
+    return { 
+      ...currentState, 
+      generating: false,
+      error: `${ERROR_MESSAGES.GENERATION_ERROR} ${error.message}`
+    };
   }
 };
 

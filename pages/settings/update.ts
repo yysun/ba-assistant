@@ -21,7 +21,7 @@ import {
   ERROR_MESSAGES,
 } from './types';
 import { loadProject, saveProject, createProject } from '../_services/project';
-import { processStreamResponse, SSEEvent as ServiceSSEEvent } from '../_services/sse';
+import { processStreamResponse, SSEEvent as ServiceSSEEvent, ErrorEventData } from '../_services/sse';
 
 // Utility Functions
 const createErrorState = (state: State, error: ErrorMessage): State => ({
@@ -34,12 +34,35 @@ const createErrorState = (state: State, error: ErrorMessage): State => ({
 const convertServiceEvent = (event: ServiceSSEEvent<any>): SSEEvent => {
   switch (event.event) {
     case 'commits':
+      return {
+        event: 'commits',
+        data: { content: event.data.content }
+      };
     case 'tags':
+      return {
+        event: 'tags',
+        data: { content: event.data.content }
+      };
     case 'feature':
+      return {
+        event: 'feature',
+        data: { content: event.data.content }
+      };
     case 'summary':
+      return {
+        event: 'summary',
+        data: { content: event.data.content }
+      };
     case 'success':
+      return {
+        event: 'success',
+        data: { message: event.data.message }
+      };
     case 'error':
-      return event as SSEEvent;
+      return {
+        event: 'error',
+        data: { message: (event.data as ErrorEventData).message }
+      };
     default:
       throw new Error(`Unknown event type: ${event.event}`);
   }
@@ -52,8 +75,9 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
         ...currentState,
         stats: {
           ...currentState.stats,
-          commits: event.data.content
-        }
+          commits: [...currentState.stats.commits, event.data.content]
+        },
+        error: null
       };
 
     case 'tags':
@@ -61,8 +85,9 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
         ...currentState,
         stats: {
           ...currentState.stats,
-          tags: event.data.content
-        }
+          tags: [...currentState.stats.tags, event.data.content]
+        },
+        error: null
       };
 
     case 'feature':
@@ -71,7 +96,8 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
         features: {
           ...currentState.features,
           items: [...currentState.features.items, event.data.content]
-        }
+        },
+        error: null
       };
 
     case 'summary':
@@ -80,7 +106,8 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
         features: {
           ...currentState.features,
           summary: [...currentState.features.summary, event.data.content]
-        }
+        },
+        error: null
       };
 
     case 'success':
@@ -99,7 +126,8 @@ const processEvents = (currentState: State, event: SSEEvent): State => {
       }
       return {
         ...currentState,
-        loading: false
+        loading: false,
+        error: null
       };
 
     case 'error':
@@ -131,8 +159,15 @@ const copyFeatures = async (state: State): Promise<State> => {
     await navigator.clipboard.writeText(text);
   } catch (error) {
     console.error('Failed to copy text:', error);
+    return {
+      ...state,
+      error: 'Failed to copy features to clipboard'
+    };
   }
-  return state;
+  return {
+    ...state,
+    error: null
+  };
 };
 
 const copySummary = async (state: State): Promise<State> => {
@@ -141,8 +176,15 @@ const copySummary = async (state: State): Promise<State> => {
     await navigator.clipboard.writeText(text);
   } catch (error) {
     console.error('Failed to copy text:', error);
+    return {
+      ...state,
+      error: 'Failed to copy summary to clipboard'
+    };
   }
-  return state;
+  return {
+    ...state,
+    error: null
+  };
 };
 
 const getFeatures = async (state: State, component: Component<State>): Promise<State> => {
@@ -159,6 +201,8 @@ const getFeatures = async (state: State, component: Component<State>): Promise<S
     features: { items: [], summary: [] }
   };
 
+  component.run('render', currentState);
+  
   try {
     const response = await fetch(
       `${API_ENDPOINTS.FEATURES}?path=${encodeURIComponent(state.folderPath)}`

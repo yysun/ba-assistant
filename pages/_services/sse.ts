@@ -7,6 +7,7 @@
  * - Event parsing and validation with full event type support
  * - Error handling and proper cleanup
  * - Support for typed events with event names and data
+ * - Standardized error event propagation to UI
  */
 
 export interface SSEEvent<T extends object = object> {
@@ -14,33 +15,45 @@ export interface SSEEvent<T extends object = object> {
   data: T;
 }
 
-interface ErrorEvent {
+export interface ErrorEventData {
   message: string;
 }
 
 // Generic event parser that returns the full SSE event object
-export const parseSSEEvent = <T extends object>(line: string, prefix: string = 'data: '): SSEEvent<T> | null => {
+export const parseSSEEvent = <T extends object>(line: string, prefix: string = 'data: '): SSEEvent<T | ErrorEventData> | null => {
   if (!line.startsWith(prefix)) return null;
   try {
     const event = JSON.parse(line.slice(prefix.length)) as SSEEvent<T>;
-    if (event.event === 'error' && (event.data as unknown as ErrorEvent).message) {
-      throw new Error((event.data as unknown as ErrorEvent).message);
+    // Convert error events into a standardized format
+    if (event.event === 'error' && (event.data as unknown as ErrorEventData).message) {
+      return {
+        event: 'error',
+        data: { message: (event.data as unknown as ErrorEventData).message }
+      };
     }
     return event;
   } catch (e) {
     console.error('SSE Parse Error:', e);
-    throw e; // Re-throw to handle in the stream processor
+    // Convert parse errors into error events
+    return {
+      event: 'error',
+      data: { message: e instanceof Error ? e.message : 'Failed to parse SSE event' }
+    };
   }
 };
 
 // Generic stream processor that can be used across different components
 export const processStreamResponse = async <T extends object>(
   response: Response,
-  onEvent: (event: SSEEvent<T>) => void,
-  eventParser: (line: string) => SSEEvent<T> | null = (line) => parseSSEEvent<T>(line)
+  onEvent: (event: SSEEvent<T | ErrorEventData>) => void,
+  eventParser: (line: string) => SSEEvent<T | ErrorEventData> | null = (line) => parseSSEEvent<T>(line)
 ): Promise<void> => {
   if (!response.body) {
-    throw new Error('No response body available');
+    onEvent({
+      event: 'error',
+      data: { message: 'No response body available' }
+    });
+    return;
   }
 
   const reader = response.body.getReader();
@@ -57,8 +70,10 @@ export const processStreamResponse = async <T extends object>(
             const event = eventParser(buffer);
             if (event) onEvent(event);
           } catch (e) {
-            // Handle parse errors but continue processing
-            console.error('Error parsing final buffer:', e);
+            onEvent({
+              event: 'error',
+              data: { message: 'Error parsing final buffer' }
+            });
           }
         }
         return;
@@ -74,12 +89,19 @@ export const processStreamResponse = async <T extends object>(
             const event = eventParser(line);
             if (event) onEvent(event);
           } catch (e) {
-            // Handle parse errors but continue processing
-            console.error('Error parsing line:', e);
+            onEvent({
+              event: 'error',
+              data: { message: 'Error parsing SSE line' }
+            });
           }
         }
       }
     }
+  } catch (e) {
+    onEvent({
+      event: 'error',
+      data: { message: e instanceof Error ? e.message : 'Stream processing error' }
+    });
   } finally {
     reader.cancel().catch(console.error);
   }

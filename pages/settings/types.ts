@@ -1,96 +1,72 @@
 /**
  * Settings Types Module
  * 
- * Contains type definitions for the settings page:
- * - Repository data types (commits, tags)
- * - Application state interface
- * - Server-sent events (SSE) types
- * - Error message types
+ * Contains type definitions for the settings page state and events.
+ * Includes:
+ * - State interface for component state management
+ * - SSE event data types for stream handling
+ * - API endpoint constants
+ * - Error message types and constants
  */
 
-// Repository data types
-export interface Commit {
-  hash: string;
-  date: string;
-}
+export type ErrorMessage = string;
 
-export interface Tag {
-  name: string;
-}
-
-export interface Stats {
-  commits: Commit[];
-  tags: Tag[];
-}
-
-// Application state
 export interface State {
   folderPath: string;
   loading: boolean;
-  error: string | null;
-  stats: Stats;
+  error: ErrorMessage | null;
+  stats: {
+    commits: string[];
+    tags: string[];
+  };
   features: {
     items: string[];
     summary: string[];
   };
 }
 
-// Server-sent events
-export type CommitsEvent = {
-  event: 'commits';
-  data: { content: Commit[] };
+// Event data types that extend object for SSE service compatibility
+export interface CommitsEventData {
+  content: string;
 }
 
-export type TagsEvent = {
-  event: 'tags';
-  data: { content: Tag[] };
+export interface TagsEventData {
+  content: string;
 }
 
-export type FeatureEvent = {
-  event: 'feature';
-  data: { content: string };
+export interface FeatureEventData {
+  content: string;
 }
 
-export type SummaryEvent = {
-  event: 'summary';
-  data: { content: string };
+export interface SummaryEventData {
+  content: string;
 }
 
-export type SuccessEvent = {
-  event: 'success';
-  data: Record<string, never>;
+export interface SuccessEventData {
+  message?: string;
 }
 
-export type ErrorEvent = {
-  event: 'error';
-  data: { message: string };
-}
+// Use the ErrorEventData from SSE service
+// import { ErrorEventData } from '../_services/sse';
 
+// SSE event type using service's generic interface
 export type SSEEvent =
-  | CommitsEvent
-  | TagsEvent
-  | FeatureEvent
-  | SummaryEvent
-  | SuccessEvent
-  | ErrorEvent;
+  | { event: 'commits'; data: CommitsEventData }
+  | { event: 'tags'; data: TagsEventData }
+  | { event: 'feature'; data: FeatureEventData }
+  | { event: 'summary'; data: SummaryEventData }
+  | { event: 'success'; data: SuccessEventData }
+  | { event: 'error'; data: { message: string } };
 
-// Constants
 export const API_ENDPOINTS = {
   STATS: '/api/repo/stats',
   FEATURES: '/api/repo/features'
 } as const;
 
 export const ERROR_MESSAGES = {
-  EMPTY_PATH: 'Repository path cannot be empty',
   NO_PATH: 'Please enter a repository path',
-  NO_CONTENT: 'Server response has no content',
+  EMPTY_PATH: 'Repository path cannot be empty',
   GENERIC_STATS: 'Failed to analyze repository',
-  GENERIC_FEATURES: 'Failed to analyze features',
-  INVALID_EVENT_DATA: 'Invalid event data received',
-  INVALID_EVENT_FORMAT: 'Invalid event format - missing event',
-  INVALID_COMMITS_DATA: 'Invalid commits data received',
-  INVALID_TAGS_DATA: 'Invalid tags data received',
-  UNKNOWN_ERROR: 'Unknown error occurred'
+  GENERIC_FEATURES: 'Failed to extract features',
+  UNKNOWN_ERROR: 'An unknown error occurred'
 } as const;
-
-export type ErrorMessage = string;
