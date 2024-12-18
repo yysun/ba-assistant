@@ -40,6 +40,35 @@ BA Assistant is a tool that helps business analysts build requirement documents 
    ```
 3. Open your browser and navigate to `http://localhost:3000`
 
+### Using Docker
+1. Prerequisites:
+   - Docker and Docker Compose installed
+   - NVIDIA GPU and drivers (optional, for GPU acceleration)
+
+2. Run the application:
+   ```bash
+   docker compose up
+   ```
+   This will:
+   - Start the BA Assistant application on port 8080
+   - Start Ollama service with GPU support (if available)
+   - Configure all necessary environment variables
+   - Mount Ollama data volume for model persistence
+
+3. Access the application:
+   - Open your browser and navigate to `http://localhost:8080`
+
+4. Environment Configuration:
+   The Docker setup includes the following default configurations:
+   - Ollama endpoint: http://ollama:11434/
+   - Model: llama3.2:3b
+   - Temperature: 0.3
+   - Max tokens: 4096
+   - Language: English
+   - Streaming: enabled
+   - Retry attempts: 3
+   - Retry delay: 1000ms
+
 ## Core Features
 
 ### 1. Project Management

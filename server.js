@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import 'dotenv/config';
 import server, { config } from 'apprun-site/server.js';
 
 const port = process.env.PORT || 8080;

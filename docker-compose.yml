@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - OLLAMA_ENDPOINT=http://ollama:11434/
+      - OLLAMA_MODEL=llama3.2:3b
+      - OLLAMA_TEMPERATURE=0.3
+      - OLLAMA_RETRY_ATTEMPTS=3
+      - OLLAMA_RETRY_DELAY=1000
+      - OLLAMA_MAX_TOKENS=4096
+      - OLLAMA_LANGUAGE=English
+      - OLLAMA_STREAMING=true
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+volumes:
+  ollama_data:
